@@ -1,16 +1,16 @@
 use super::*;
 
-pub fn pool(board: &mut Board) -> Option<Justification> {
+pub fn pool(board: &Board) -> Option<Update> {
     let (h, w) = board.dims();
 
-    let mut used = None;
-    for r in 0..h-1 {
-        for c in 0..w-1 {
-            let coords = [(r, c), (r+1,c), (r,c+1), (r+1,c+1)];
+    let mut update = Update::new(Justification::Pool);
+    for r in 0..h - 1 {
+        for c in 0..w - 1 {
+            let coords = [(r, c), (r + 1, c), (r, c + 1), (r + 1, c + 1)];
 
             let mut count = 0;
             for (r, c) in coords {
-                if board.tiles[r][c] == Tile::Sea {
+                if board.tiles[r][c] == Sea {
                     count += 1;
                 }
             }
@@ -18,16 +18,14 @@ pub fn pool(board: &mut Board) -> Option<Justification> {
             if count != 3 {
                 continue;
             }
-            
-            for (r,c) in coords {
-                if board.tiles[r][c] == Tile::Empty {
-                    board.tiles[r][c] = Tile::Land;
-                    used = Some(Justification::Pool);
+
+            for (r, c) in coords {
+                if board.tiles[r][c] == Empty {
+                    update.land.push((r, c));
                 }
             }
-
         }
     }
 
-    used
+    update.check(board)
 }

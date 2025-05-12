@@ -1,6 +1,12 @@
+use std::ops::Index;
+
 use ratatui::style::Color;
 
-#[derive(Clone)]
+pub use Tile::*;
+
+pub type Coord = (usize, usize);
+
+#[derive(Clone, Copy)]
 pub struct Island {
     pub r: usize,
     pub c: usize,
@@ -19,45 +25,53 @@ pub enum Tile {
     Empty,
     Sea,
     Land,
-    Number(usize),
 }
 
 impl Board {
     pub fn empty(rows: usize, cols: usize) -> Self {
         Self {
-            tiles: vec![vec![Tile::Empty; cols]; rows],
+            tiles: vec![vec![Empty; cols]; rows],
             islands: vec![],
         }
     }
 
-    pub fn dims(&self) -> (usize, usize) {
+    pub fn check_island(self: &Board, (r, c): Coord) -> Option<Island> {
+        self.islands.iter().cloned().find(|i| i.r == r && i.c == c)
+    }
+
+    pub fn dims(&self) -> Coord {
         (self.tiles.len(), self.tiles[0].len())
     }
 
     pub fn from_islands(rows: usize, cols: usize, islands: impl Iterator<Item = Island>) -> Self {
         let mut new = Self::empty(rows, cols);
         for island in islands {
-            let Island { r, c, n } = island;
-            new.tiles[r][c] = Tile::Number(n);
+            let Island { r, c, .. } = island;
+            new.tiles[r][c] = Land;
             new.islands.push(island);
         }
         new
     }
+
+    pub fn is_finished(&self) -> bool {
+        self.tiles.iter().all(|row| row.iter().all(|&tile| tile != Empty))
+    }
+}
+
+impl Index<Coord> for Board {
+    type Output = Tile;
+    fn index(&self, (r, c): Coord) -> &Self::Output {
+        &self.tiles[r][c]
+    }
 }
 
 impl Tile {
-    pub fn land(&self) -> bool {
-        use Tile::*;
-        matches!(self, Land | Number(_))
-    }
-
     pub fn color(&self) -> Color {
         use Color::*;
-        use Tile::*;
         match self {
-            Land | Number(_) => Rgb(10, 80, 10),
+            Land => Rgb(10, 80, 10),
             Empty => DarkGray,
-            Sea => Cyan,
+            Sea => Blue,
         }
     }
 }
