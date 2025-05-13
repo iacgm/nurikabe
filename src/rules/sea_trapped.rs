@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn one_way(board: &Board) -> Option<Update> {
-    let mut update = Update::new(Justification::OneWayOut);
+pub fn sea_trapped(board: &Board) -> Option<Update> {
+    let mut update = Update::new(Justification::SeaTrapped);
 
     let (h, w) = board.dims();
     for r in 0..h {
@@ -9,12 +9,11 @@ pub fn one_way(board: &Board) -> Option<Update> {
             let coord = (r, c);
             let tile = board[coord];
 
-            if tile != Land {
+            if tile != Sea {
                 continue;
             }
 
             let area = area(board, coord);
-
             let surrounding = surrounding(board, area);
 
             let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
@@ -27,7 +26,7 @@ pub fn one_way(board: &Board) -> Option<Update> {
                 continue;
             }
 
-            update.set_land(empty);
+            update.set_sea(empty);
         }
     }
 

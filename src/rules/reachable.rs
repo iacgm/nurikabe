@@ -8,7 +8,7 @@ pub fn reachability(board: &Board) -> Option<Update> {
     for r in 0..h {
         for c in 0..w {
             let coord = (r,c);
-            let tile = board.tiles[r][c];
+            let tile = board[coord];
 
             if tile != Empty {
                 continue;
@@ -27,15 +27,13 @@ fn reachable_by(board: &Board, coord: Coord, island: Island) -> bool {
     fn dfs(board: &Board, curr: Coord, goal: Coord, visited: &mut Vec<Coord>, limit: usize) -> bool {
         let tile = board[curr];
 
-        if limit == 0 || tile == Tile::Sea || visited.contains(&curr) {
+        if limit == 0 || tile == Tile::Sea {
             return false;
         }
 
         if curr == goal {
             return true;
         }
-
-        visited.push(curr);
 
         for nt in neighbors(board, curr) {
             if dfs(board, nt, goal, visited, limit - 1) {

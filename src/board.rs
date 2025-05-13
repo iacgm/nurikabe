@@ -6,7 +6,7 @@ pub use Tile::*;
 
 pub type Coord = (usize, usize);
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Island {
     pub r: usize,
     pub c: usize,
@@ -17,9 +17,10 @@ pub struct Island {
 pub struct Board {
     pub tiles: Vec<Vec<Tile>>,
     pub islands: Vec<Island>,
+    pub island_map: Vec<Vec<Option<Island>>>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub enum Tile {
     #[default]
     Empty,
@@ -32,6 +33,7 @@ impl Board {
         Self {
             tiles: vec![vec![Empty; cols]; rows],
             islands: vec![],
+            island_map: vec![vec![None; cols]; rows],
         }
     }
 
@@ -39,15 +41,12 @@ impl Board {
         for row in &mut self.tiles {
             row.resize(w, Empty);
         }
-        self.tiles.resize(h, vec![Empty; h]);
-    }
+        self.tiles.resize(h, vec![Empty; w]);
 
-    pub fn mut_island(&mut self, (r, c): Coord) -> Option<&mut Island> {
-        self.islands.iter_mut().find(|i| i.r == r && i.c == c)
-    }
-
-    pub fn get_island(&self, (r, c): Coord) -> Option<Island> {
-        self.islands.iter().cloned().find(|i| i.r == r && i.c == c)
+        for row in &mut self.island_map {
+            row.resize(w, None);
+        }
+        self.island_map.resize(h, vec![None; w]);
     }
 
     pub fn dims(&self) -> Coord {
@@ -64,12 +63,15 @@ impl Board {
 
     pub fn add_island(&mut self, island: Island) {
         let Island { r, c, .. } = island;
+        self.remove_island((r, c));
         self.tiles[r][c] = Land;
         self.islands.push(island);
+        self.island_map[r][c] = Some(island);
     }
 
-    pub fn remove_island(&mut self, (r,c): (usize, usize)) {
-        self.islands.retain(|i| !(i.r == r && i.c == c))
+    pub fn remove_island(&mut self, (r, c): (usize, usize)) {
+        self.islands.retain(|i| !(i.r == r && i.c == c));
+        self.island_map[r][c] = None;
     }
 
     pub fn solved(&self) -> bool {
@@ -77,7 +79,6 @@ impl Board {
             .iter()
             .all(|row| row.iter().all(|&tile| tile != Empty))
     }
-
 }
 
 impl Index<Coord> for Board {

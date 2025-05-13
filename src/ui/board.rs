@@ -34,10 +34,13 @@ impl<'a> Widget for Delta<'a> {
                     tile.color()
                 };
 
-                let text = if let Some(Island { n, .. }) = board.get_island((r, c)) {
-                    format!("{:2}", n)
-                } else {
-                    format!("  ")
+                let text = match board.island_map[r][c] {
+                    Some(Island { n, r: ir, c: ic }) if r == ir && c == ic => {
+                        format!("{:2}", n)
+                    }
+                    _ => {
+                        format!("  ")
+                    }
                 };
                 line.push(text.bg(color));
             }

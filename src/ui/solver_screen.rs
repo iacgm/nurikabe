@@ -82,7 +82,8 @@ impl SolverScreen {
             self.solution
                 .logic
                 .iter()
-                .map(|u| format!("{}", u.justification)),
+                .enumerate()
+                .map(|(i, u)| format!("{:2}: {}", i, u.justification)),
         );
         list_entries.push("Final state".into());
 
@@ -94,7 +95,7 @@ impl SolverScreen {
         let proof_step = List::new(list_entries)
             .block(block)
             .highlight_style(Style::new().reversed())
-            .highlight_symbol(">>>")
+            .highlight_symbol(">")
             .repeat_highlight_symbol(true);
 
         frame.render_stateful_widget(proof_step, proof_area, &mut self.list_state);

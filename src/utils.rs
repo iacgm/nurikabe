@@ -23,12 +23,12 @@ pub fn neighbors(board: &Board, (r, c): Coord) -> Area {
     neighbors
 }
 
-pub fn island(board: &Board, (r, c) : (usize, usize)) -> (Area, Option<Island>){
+pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
     let (h, w) = board.dims();
 
+    let kind = board[(r, c)];
     let mut area = vec![];
-    let mut island = None;
-    
+
     let mut visited = vec![];
     let mut stack = vec![(r, c)];
 
@@ -37,16 +37,15 @@ pub fn island(board: &Board, (r, c) : (usize, usize)) -> (Area, Option<Island>){
             continue;
         }
 
-        island = board.get_island((r,c));
-
-        if board.tiles[r][c] == Land {
+        if board.tiles[r][c] == kind {
             area.push((r, c));
             stack.extend(neighbors(board, (r, c)));
         }
+
         visited.push((r, c));
     }
 
-    (area, island)
+    area
 }
 
 pub fn surrounding(board: &Board, area: Area) -> Area {

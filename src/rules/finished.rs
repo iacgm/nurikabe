@@ -6,11 +6,11 @@ pub fn finished(board: &Board) -> Option<Update> {
     let mut update = Update::new(Justification::Finished);
     for r in 0..h {
         for c in 0..w {
-            let Some(Island { n, .. }) = board.get_island((r, c)) else {
+            let Some(Island { n, .. }) = board.island_map[r][c] else {
                 continue;
             };
 
-            let (area, _) = island(board, (r, c));
+            let area = area(board, (r, c));
 
             if area.len() == n {
                 for n in surrounding(board, area) {
