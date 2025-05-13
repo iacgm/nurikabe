@@ -7,11 +7,16 @@ use super::*;
 use super::solver_screen::*;
 
 pub enum UI {
+    Entry(EntryScreen),
     Solver(SolverScreen),
     Exit,
 }
 
 impl UI {
+    pub fn entry() -> Self {
+        Self::Entry(EntryScreen::new())
+    }
+
     pub fn solver(board: Board) -> Self {
         Self::Solver(SolverScreen::new(board))
     }
@@ -20,10 +25,11 @@ impl UI {
         use UI::*;
         loop {
             self = match self {
-                Solver(s) => s.run(terminal)?, 
+                Entry(s) => s.run(terminal)?,
+                Solver(s) => s.run(terminal)?,
                 Exit => break,
             }
-        };
+        }
 
         Ok(())
     }

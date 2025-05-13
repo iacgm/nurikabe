@@ -1,6 +1,12 @@
+use std::ops::{Index, IndexMut};
+
 use ratatui::style::Color;
 
-#[derive(Clone)]
+pub use Tile::*;
+
+pub type Coord = (usize, usize);
+
+#[derive(Clone, Copy)]
 pub struct Island {
     pub r: usize,
     pub c: usize,
@@ -19,45 +25,81 @@ pub enum Tile {
     Empty,
     Sea,
     Land,
-    Number(usize),
 }
 
 impl Board {
     pub fn empty(rows: usize, cols: usize) -> Self {
         Self {
-            tiles: vec![vec![Tile::Empty; cols]; rows],
+            tiles: vec![vec![Empty; cols]; rows],
             islands: vec![],
         }
     }
 
-    pub fn dims(&self) -> (usize, usize) {
+    pub fn resize(&mut self, (h, w): Coord) {
+        for row in &mut self.tiles {
+            row.resize(w, Empty);
+        }
+        self.tiles.resize(h, vec![Empty; h]);
+    }
+
+    pub fn mut_island(&mut self, (r, c): Coord) -> Option<&mut Island> {
+        self.islands.iter_mut().find(|i| i.r == r && i.c == c)
+    }
+
+    pub fn get_island(&self, (r, c): Coord) -> Option<Island> {
+        self.islands.iter().cloned().find(|i| i.r == r && i.c == c)
+    }
+
+    pub fn dims(&self) -> Coord {
         (self.tiles.len(), self.tiles[0].len())
     }
 
     pub fn from_islands(rows: usize, cols: usize, islands: impl Iterator<Item = Island>) -> Self {
         let mut new = Self::empty(rows, cols);
         for island in islands {
-            let Island { r, c, n } = island;
-            new.tiles[r][c] = Tile::Number(n);
-            new.islands.push(island);
+            new.add_island(island);
         }
         new
+    }
+
+    pub fn add_island(&mut self, island: Island) {
+        let Island { r, c, .. } = island;
+        self.tiles[r][c] = Land;
+        self.islands.push(island);
+    }
+
+    pub fn remove_island(&mut self, (r,c): (usize, usize)) {
+        self.islands.retain(|i| !(i.r == r && i.c == c))
+    }
+
+    pub fn solved(&self) -> bool {
+        self.tiles
+            .iter()
+            .all(|row| row.iter().all(|&tile| tile != Empty))
+    }
+
+}
+
+impl Index<Coord> for Board {
+    type Output = Tile;
+    fn index(&self, (r, c): Coord) -> &Self::Output {
+        &self.tiles[r][c]
+    }
+}
+
+impl IndexMut<Coord> for Board {
+    fn index_mut(&mut self, (r, c): Coord) -> &mut Self::Output {
+        &mut self.tiles[r][c]
     }
 }
 
 impl Tile {
-    pub fn land(&self) -> bool {
-        use Tile::*;
-        matches!(self, Land | Number(_))
-    }
-
     pub fn color(&self) -> Color {
         use Color::*;
-        use Tile::*;
         match self {
-            Land | Number(_) => Rgb(10, 80, 10),
-            Empty => DarkGray,
-            Sea => Cyan,
+            Land => Rgb(10, 80, 10),
+            Empty => Black,
+            Sea => Blue,
         }
     }
 }

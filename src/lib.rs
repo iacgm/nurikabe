@@ -1,9 +1,9 @@
 pub mod board;
 pub mod rules;
-pub mod ui;
 pub mod solve;
+pub mod ui;
 
 pub use board::*;
 pub use rules::*;
-pub use ui::*;
 pub use solve::*;
+pub use ui::*;
