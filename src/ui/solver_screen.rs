@@ -77,15 +77,15 @@ impl SolverScreen {
             .title(title.centered())
             .border_set(border::ROUNDED);
 
-        let mut list_entries = vec!["Initial State".into()];
+        let mut list_entries = vec!["Initial Board".into()];
         list_entries.extend(
             self.solution
                 .logic
                 .iter()
                 .enumerate()
-                .map(|(i, u)| format!("{:2}: {}", i, u.justification)),
+                .map(|(i, u)| format!("{:2}: {}", i+1, u.justification)),
         );
-        list_entries.push("Final state".into());
+        list_entries.push("Final Board".into());
 
         let [proof_area, solution_info_area] =
             Layout::vertical([Fill(6), Length(6)]).areas(solution_area);

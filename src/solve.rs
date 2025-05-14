@@ -60,7 +60,7 @@ impl Widget for &Solution {
         };
 
         let length_line = Line::from(vec![
-            "# of steps: ".into(),
+            "Number of steps: ".into(),
             format!("{}", self.logic.len()).bold().blue(),
         ]);
 

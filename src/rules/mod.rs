@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use super::*;
 
+mod connects_edges;
 mod cornered;
 mod distance;
 mod finished;
@@ -10,6 +11,7 @@ mod pool;
 mod reachable;
 mod sea_trapped;
 
+use connects_edges::*;
 use cornered::*;
 use distance::*;
 use finished::*;
@@ -22,8 +24,9 @@ pub type Rule = fn(&Board) -> Option<Update>;
 pub const RULES: &[Rule] = &[
     cornered,
     finished,
-    sea_trapped,
     one_way,
+    sea_trapped,
+    connects_edges,
     pool,
     distance,
     reachability,
@@ -63,15 +66,15 @@ impl Update {
         }
     }
 
-    pub fn set_sea(&mut self, (r, c): Coord) {
-        if !self.sea.contains(&(r, c)) {
-            self.sea.push((r, c));
-        }
-    }
+    pub fn set(&mut self, coord: Coord, tile: Tile) {
+        let v = match tile {
+            Sea => &mut self.sea,
+            Land => &mut self.land,
+            _ => unreachable!(),
+        };
 
-    pub fn set_land(&mut self, (r, c): Coord) {
-        if !self.land.contains(&(r, c)) {
-            self.land.push((r, c));
+        if !v.contains(&coord) {
+            v.push(coord)
         }
     }
 
@@ -89,6 +92,7 @@ impl Update {
 
 #[derive(Default, Debug)]
 pub enum Justification {
+    ConnectsEdges,
     Cornered,
     SeaTrapped,
     TooFar,
@@ -103,15 +107,18 @@ pub enum Justification {
 impl Display for Justification {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Justification::*;
-        match self {
-            TooFar => write!(f, "Too far from any island"),
-            Unreachable => write!(f, "Not reachable by any island"),
-            Pool => write!(f, "L-Corner"),
-            Finished => write!(f, "Island Complete"),
-            OneWayOut => write!(f, "Only one way for island to go"),
-            BruteForce => write!(f, "Brute Force"),
-            Cornered => write!(f, "Touches 2 islands"),
-            SeaTrapped => write!(f, "Sea must be contiguous"),
-        }
+        let reason = match self {
+            TooFar => "Too far from any island",
+            Unreachable => "Not reachable by any island",
+            Pool => "L-Corner",
+            Finished => "Island Complete",
+            OneWayOut => "Only one way for paths to go",
+            BruteForce => "Brute Force",
+            Cornered => "Touches 2 islands",
+            SeaTrapped => "Sea must be contiguous",
+            ConnectsEdges => "Connects edges",
+        };
+
+        write!(f, "{}", reason)
     }
 }

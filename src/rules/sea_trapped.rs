@@ -9,24 +9,27 @@ pub fn sea_trapped(board: &Board) -> Option<Update> {
             let coord = (r, c);
             let tile = board[coord];
 
-            if tile != Sea {
+            if tile != Empty {
                 continue;
             }
 
             let area = area(board, coord);
-            let surrounding = surrounding(board, area);
+            let surrounding = surrounding(board, &area);
 
-            let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
+            let trapped = surrounding.iter().all(|coord| board[*coord] == Land);
+            let mut islands = surrounding
+                .iter()
+                .filter_map(|&(r, c)| board.island_map[r][c])
+                .collect::<Vec<_>>();
 
-            let Some(&empty) = empties.next() else {
-                continue;
-            };
+            islands.sort();
+            islands.dedup();
 
-            if empties.next().is_some() {
-                continue;
+            if trapped && islands.len() == 1 {
+                for &t in &area {
+                    update.set(t, Land);
+                }
             }
-
-            update.set_sea(empty);
         }
     }
 

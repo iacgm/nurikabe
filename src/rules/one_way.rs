@@ -9,13 +9,12 @@ pub fn one_way(board: &Board) -> Option<Update> {
             let coord = (r, c);
             let tile = board[coord];
 
-            if tile != Land {
+            if tile == Empty {
                 continue;
             }
 
             let area = area(board, coord);
-
-            let surrounding = surrounding(board, area);
+            let surrounding = surrounding(board, &area);
 
             let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
 
@@ -27,7 +26,7 @@ pub fn one_way(board: &Board) -> Option<Update> {
                 continue;
             }
 
-            update.set_land(empty);
+            update.set(empty, tile);
         }
     }
 

@@ -15,7 +15,7 @@ pub fn reachability(board: &Board) -> Option<Update> {
             }
 
             if !board.islands.iter().any(|&i| reachable_by(board, coord, i)) {
-                update.set_sea(coord)
+                update.set(coord, Sea)
             }
         }
     }

@@ -13,8 +13,8 @@ pub fn finished(board: &Board) -> Option<Update> {
             let area = area(board, (r, c));
 
             if area.len() == n {
-                for n in surrounding(board, area) {
-                    update.set_sea(n);
+                for n in surrounding(board, &area) {
+                    update.set(n, Sea);
                 }
             }
         }

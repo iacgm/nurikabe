@@ -23,6 +23,32 @@ pub fn neighbors(board: &Board, (r, c): Coord) -> Area {
     neighbors
 }
 
+pub fn corners(board: &Board, (r, c): Coord) -> Area {
+    let mut neighbors = vec![];
+
+    let (h, w) = board.dims();
+
+    let rs = r > 0;
+    let re = r < h - 1;
+    let cs = c > 0;
+    let ce = c < w - 1;
+
+    if rs && cs {
+        neighbors.push((r - 1, c - 1));
+    }
+    if re && cs {
+        neighbors.push((r + 1, c - 1));
+    }
+
+    if rs && ce {
+        neighbors.push((r - 1, c + 1));
+    }
+    if re && ce {
+        neighbors.push((r + 1, c + 1));
+    }
+    neighbors
+}
+
 pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
     let (h, w) = board.dims();
 
@@ -48,9 +74,9 @@ pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
     area
 }
 
-pub fn surrounding(board: &Board, area: Area) -> Area {
+pub fn surrounding(board: &Board, area: &Area) -> Area {
     let mut all_neighbors = vec![];
-    for &(r, c) in &area {
+    for &(r, c) in area {
         for n in neighbors(board, (r, c)) {
             if !area.contains(&n) {
                 all_neighbors.push(n);

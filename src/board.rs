@@ -6,7 +6,7 @@ pub use Tile::*;
 
 pub type Coord = (usize, usize);
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Island {
     pub r: usize,
     pub c: usize,

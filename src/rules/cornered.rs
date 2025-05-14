@@ -24,7 +24,7 @@ pub fn cornered(board: &Board) -> Option<Update> {
             let num_island_neighbors = neighboring_islands.len();
 
             if num_island_neighbors > 1 {
-                update.set_sea(coord);
+                update.set(coord, Sea);
             }
         }
     }
