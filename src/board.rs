@@ -4,9 +4,10 @@ use ratatui::style::Color;
 
 pub use Tile::*;
 
+pub type Grid<T> = Vec<Vec<T>>;
 pub type Coord = (usize, usize);
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Island {
     pub r: usize,
     pub c: usize,
@@ -15,9 +16,8 @@ pub struct Island {
 
 #[derive(Clone)]
 pub struct Board {
-    pub tiles: Vec<Vec<Tile>>,
+    pub tiles: Grid<Tile>,
     pub islands: Vec<Island>,
-    pub island_map: Vec<Vec<Option<Island>>>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -33,8 +33,12 @@ impl Board {
         Self {
             tiles: vec![vec![Empty; cols]; rows],
             islands: vec![],
-            island_map: vec![vec![None; cols]; rows],
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (Coord, Tile)> {
+        let (h, w) = self.dims();
+        (0..h).flat_map(move |r| (0..w).map(move |c| ((r, c), self[(r, c)])))
     }
 
     pub fn resize(&mut self, (h, w): Coord) {
@@ -42,15 +46,14 @@ impl Board {
             row.resize(w, Empty);
         }
         self.tiles.resize(h, vec![Empty; w]);
-
-        for row in &mut self.island_map {
-            row.resize(w, None);
-        }
-        self.island_map.resize(h, vec![None; w]);
     }
 
     pub fn dims(&self) -> Coord {
         (self.tiles.len(), self.tiles[0].len())
+    }
+
+    pub fn lookup_island(&self, (r, c): Coord) -> Option<Island> {
+        self.islands.iter().copied().find(|i| i.r == r && i.c == c)
     }
 
     pub fn from_islands(rows: usize, cols: usize, islands: impl Iterator<Item = Island>) -> Self {
@@ -66,12 +69,10 @@ impl Board {
         self.remove_island((r, c));
         self.tiles[r][c] = Land;
         self.islands.push(island);
-        self.island_map[r][c] = Some(island);
     }
 
     pub fn remove_island(&mut self, (r, c): (usize, usize)) {
         self.islands.retain(|i| !(i.r == r && i.c == c));
-        self.island_map[r][c] = None;
     }
 
     pub fn solved(&self) -> bool {

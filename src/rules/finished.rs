@@ -1,21 +1,22 @@
 use super::*;
 
-pub fn finished(board: &Board) -> Option<Update> {
-    let (h, w) = board.dims();
-
+pub fn finished(note: &Annotation) -> Option<Update> {
     let mut update = Update::new(Justification::Finished);
-    for r in 0..h {
-        for c in 0..w {
-            let Some(Island { n, .. }) = board.island_map[r][c] else {
-                continue;
-            };
+    let board = note.board;
+    for (coord, t) in board.iter() {
+        if t != Land {
+            continue;
+        }
 
-            let area = area(board, (r, c));
+        let Some(Island { n, .. }) = note.island(coord) else {
+            continue;
+        };
 
-            if area.len() == n {
-                for n in surrounding(board, &area) {
-                    update.set(n, Sea);
-                }
+        let area = area(board, coord);
+
+        if area.len() == n {
+            for n in surrounding(board, &area) {
+                update.set(n, Sea);
             }
         }
     }

@@ -25,8 +25,9 @@ pub fn search_solution(board: Board) -> Solution {
 
     let start = Instant::now();
     'solve: loop {
+        let note = Annotation::new(&state);
         for rule in RULES {
-            if let Some(update) = rule(&state) {
+            if let Some(update) = rule(&note) {
                 states.push(state.clone());
                 update.apply_to(&mut state);
                 logic.push(update);

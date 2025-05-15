@@ -1,8 +1,9 @@
 use super::*;
 
-pub fn sea_trapped(board: &Board) -> Option<Update> {
+pub fn sea_trapped( note: &Annotation) -> Option<Update> {
     let mut update = Update::new(Justification::SeaTrapped);
 
+    let board = note.board;
     let (h, w) = board.dims();
     for r in 0..h {
         for c in 0..w {
@@ -19,7 +20,7 @@ pub fn sea_trapped(board: &Board) -> Option<Update> {
             let trapped = surrounding.iter().all(|coord| board[*coord] == Land);
             let mut islands = surrounding
                 .iter()
-                .filter_map(|&(r, c)| board.island_map[r][c])
+                .filter_map(|&(r, c)| note.island((r, c)))
                 .collect::<Vec<_>>();
 
             islands.sort();

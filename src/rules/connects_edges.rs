@@ -2,31 +2,36 @@ use std::collections::HashSet;
 
 use super::*;
 
-pub fn connects_edges(board: &Board) -> Option<Update> {
+pub fn connects_edges(note: &Annotation) -> Option<Update> {
     let mut update = Update::new(Justification::ConnectsEdges);
 
+    let board = note.board;
     let (h, w) = board.dims();
 
     let mut grounded: HashSet<Island> = Default::default(); // Islands which touch the edge of the board
 
-    let mut ground = |(r, c)| {
-        let mut stack = vec![(r, c)];
+    let mut ground = |coord: Coord| {
+        let mut stack = vec![coord];
         let mut visited = vec![];
-        while let Some((r, c)) = stack.pop() {
-            if visited.contains(&(r, c)) {
+        while let Some(coord) = stack.pop() {
+            if visited.contains(&coord) {
                 continue;
             };
-            visited.push((r, c));
+            visited.push(coord);
 
-            // Unsure why type inference breaks here and nowere else?
-            let row: &Vec<Option<Island>> = &board.island_map[r];
-            let Some(i) = row[c] else {
+            if board[coord] != Land {
+                continue;
+            }
+
+            let Some(i) = note.island(coord) else {
                 continue;
             };
 
-            grounded.insert(i);
+            if !grounded.contains(&i) {
+                grounded.insert(i);
+            }
 
-            let area = area(board, (r, c));
+            let area = area(board, coord);
             stack.extend(area.iter().flat_map(|&t| corners(board, t)));
         }
     };
@@ -53,7 +58,8 @@ pub fn connects_edges(board: &Board) -> Option<Update> {
             let mut grounded_is = neighbors(board, coord)
                 .into_iter()
                 .chain(corners(board, coord).into_iter())
-                .filter_map(|(r, c)| board.island_map[r][c])
+                .filter(|&c| board[c] == Land)
+                .filter_map(|c| note.island(c))
                 .filter(|i| grounded.contains(i))
                 .collect::<Vec<_>>();
 
@@ -62,6 +68,7 @@ pub fn connects_edges(board: &Board) -> Option<Update> {
 
             if grounded_is.len() > 1 {
                 update.set(coord, Sea);
+                return update.check(board);
             }
         }
     }

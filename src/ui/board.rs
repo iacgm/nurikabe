@@ -34,8 +34,8 @@ impl<'a> Widget for Delta<'a> {
                     tile.color()
                 };
 
-                let text = match board.island_map[r][c] {
-                    Some(Island { n, r: ir, c: ic }) if r == ir && c == ic => {
+                let text = match board.lookup_island((r, c)) {
+                    Some(Island { n, .. }) => {
                         format!("{:2}", n)
                     }
                     _ => {

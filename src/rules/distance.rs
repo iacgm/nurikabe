@@ -1,6 +1,7 @@
 use super::*;
 
-pub fn distance(board: &Board) -> Option<Update> {
+pub fn distance(note: &Annotation) -> Option<Update> {
+    let board = note.board;
     let (h, w) = board.dims();
 
     let mut update = Update::new(Justification::TooFar);

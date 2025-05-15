@@ -86,3 +86,51 @@ pub fn surrounding(board: &Board, area: &Area) -> Area {
 
     all_neighbors
 }
+
+pub fn island_reaches(board: &Board, note: &Annotation, island: Island, coord: Coord) -> bool {
+    fn dfs(
+        board: &Board,
+        note: &Annotation,
+        curr: Coord,
+        goal: Coord,
+        visited: &mut Vec<Coord>,
+        island: Island,
+        limit: usize,
+    ) -> bool {
+        let tile = board[curr];
+
+        let (r, c) = curr;
+        if limit == 0 || tile == Tile::Sea || !note.possible_islands[r][c].contains(&island) {
+            return false;
+        }
+
+        if curr == goal {
+            return true;
+        }
+
+        for nt in neighbors(board, curr) {
+            if dfs(board, note, nt, goal, visited, island, limit - 1) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    let Island { r, c, n } = island;
+    let ic = (r, c);
+
+    let area = area(board, ic);
+
+    area.iter().any(|&ic| {
+        dfs(
+            board,
+            note,
+            ic,
+            coord,
+            &mut vec![],
+            island,
+            n + 1 - area.len(),
+        )
+    })
+}

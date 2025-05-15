@@ -1,8 +1,9 @@
 use super::*;
 
-pub fn one_way(board: &Board) -> Option<Update> {
+pub fn one_way(note: &Annotation) -> Option<Update> {
     let mut update = Update::new(Justification::OneWayOut);
 
+    let board = note.board;
     let (h, w) = board.dims();
     for r in 0..h {
         for c in 0..w {

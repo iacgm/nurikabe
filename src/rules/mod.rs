@@ -20,16 +20,17 @@ use pool::*;
 use reachable::*;
 use sea_trapped::*;
 
-pub type Rule = fn(&Board) -> Option<Update>;
+pub type Rule = fn(&Annotation) -> Option<Update>;
+
 pub const RULES: &[Rule] = &[
-    cornered,
     finished,
+    reachability,
+    cornered,
     one_way,
     sea_trapped,
     connects_edges,
     pool,
     distance,
-    reachability,
 ];
 
 #[derive(Default)]
@@ -55,14 +56,6 @@ impl Update {
 
         for &coord in &self.land {
             board[coord] = Land;
-        }
-
-        for &coord in &self.land {
-            let area = area(board, coord);
-            let island = area.iter().find_map(|&c| board.island_map[c.0][c.1]);
-            for (r, c) in area {
-                board.island_map[r][c] = island;
-            }
         }
     }
 

@@ -113,7 +113,7 @@ impl EntryScreen {
                 let n = c.to_digit(10).unwrap() as usize;
 
                 let (r, c) = self.cursor;
-                if let Some(mut island) = self.board.island_map[r][c] {
+                if let Some(mut island) = self.board.lookup_island(self.cursor) {
                     island.n %= 100;
                     island.n *= 10;
                     island.n += n;
@@ -124,8 +124,7 @@ impl EntryScreen {
             }
             Backspace => {
                 self.cursor_clock = Instant::now();
-                let (r, c) = self.cursor;
-                if let Some(mut island) = self.board.island_map[r][c] {
+                if let Some(mut island) = self.board.lookup_island(self.cursor) {
                     island.n /= 10;
                     if island.n == 0 {
                         self.board.remove_island(self.cursor)
