@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use super::*;
 
 pub type Area = Vec<Coord>;
@@ -87,9 +89,8 @@ pub fn surrounding(board: &Board, area: &Area) -> Area {
     all_neighbors
 }
 
-pub fn island_reaches(board: &Board, note: &Annotation, island: Island, coord: Coord) -> bool {
+pub fn island_reaches(note: &Annotation, island: Island, coord: Coord) -> bool {
     fn dfs(
-        board: &Board,
         note: &Annotation,
         curr: Coord,
         goal: Coord,
@@ -97,7 +98,7 @@ pub fn island_reaches(board: &Board, note: &Annotation, island: Island, coord: C
         island: Island,
         limit: usize,
     ) -> bool {
-        let tile = board[curr];
+        let tile = note.board[curr];
 
         let (r, c) = curr;
         if limit == 0 || tile == Tile::Sea || !note.possible_islands[r][c].contains(&island) {
@@ -108,8 +109,8 @@ pub fn island_reaches(board: &Board, note: &Annotation, island: Island, coord: C
             return true;
         }
 
-        for nt in neighbors(board, curr) {
-            if dfs(board, note, nt, goal, visited, island, limit - 1) {
+        for nt in neighbors(note.board, curr) {
+            if dfs(note, nt, goal, visited, island, limit - 1) {
                 return true;
             }
         }
@@ -120,17 +121,52 @@ pub fn island_reaches(board: &Board, note: &Annotation, island: Island, coord: C
     let Island { r, c, n } = island;
     let ic = (r, c);
 
-    let area = area(board, ic);
+    let area = area(&note.board, ic);
 
-    area.iter().any(|&ic| {
-        dfs(
-            board,
-            note,
-            ic,
-            coord,
-            &mut vec![],
-            island,
-            n + 1 - area.len(),
+    area.iter()
+        .any(|&ic| dfs(note, ic, coord, &mut vec![], island, n + 1 - area.len()))
+}
+
+pub fn enumerate_island_paths(
+    note: &Annotation,
+    island: Island,
+) -> impl Iterator<Item = Vec<Coord>> {
+    fn dfs<'a>(
+        note: &'a Annotation,
+        island: Island,
+        current: Vec<Coord>,
+    ) -> Box<dyn Iterator<Item = Vec<Coord>> + 'a> {
+        if current.len() == island.n {
+            return Box::new(once(current.clone()));
+        }
+
+        let mut reachable = surrounding(note.board, &current);
+
+        // At first step, no lexicographic ordering required
+        if current.len() != 1 {
+            let prev = current.last().unwrap();
+            let news = neighbors(note.board, *prev);
+            reachable.retain(|t| t > prev || news.contains(t));
+        }
+
+        Box::new(
+            reachable
+                .clone()
+                .into_iter()
+                .filter(move |&(r, c)| note.possible_islands[r][c].contains(&island))
+                .flat_map(move |n| {
+                    let mut new = current.clone();
+                    new.push(n);
+
+                    dfs(note, island, new)
+                }),
         )
+    }
+
+    let ic = (island.r, island.c);
+    dfs(note, island, vec![ic]).filter(move |path| {
+        !note.board.iter().any(|(c, t)| {
+            t == Land && note.island(c) == Some(island) && !path.contains(&c)
+        })
     })
 }

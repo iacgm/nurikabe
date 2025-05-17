@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use super::*;
 
+mod all_paths_border;
+mod all_paths_intersect;
 mod connects_edges;
 mod cornered;
 mod distance;
@@ -10,7 +12,10 @@ mod one_way;
 mod pool;
 mod reachable;
 mod sea_trapped;
+mod sea_complete;
 
+use all_paths_border::*;
+use all_paths_intersect::*;
 use connects_edges::*;
 use cornered::*;
 use distance::*;
@@ -19,10 +24,12 @@ use one_way::*;
 use pool::*;
 use reachable::*;
 use sea_trapped::*;
+use sea_complete::*;
 
 pub type Rule = fn(&Annotation) -> Option<Update>;
 
 pub const RULES: &[Rule] = &[
+    sea_complete,
     finished,
     reachability,
     cornered,
@@ -31,6 +38,8 @@ pub const RULES: &[Rule] = &[
     connects_edges,
     pool,
     distance,
+    all_paths_intersect,
+    all_paths_border,
 ];
 
 #[derive(Default)]
@@ -85,6 +94,7 @@ impl Update {
 
 #[derive(Default, Debug)]
 pub enum Justification {
+    SeaComplete,
     ConnectsEdges,
     Cornered,
     SeaTrapped,
@@ -93,6 +103,8 @@ pub enum Justification {
     Pool,
     Finished,
     OneWayOut,
+    AllPathsIntersect,
+    AllPathsBorder,
     #[default]
     BruteForce,
 }
@@ -110,6 +122,9 @@ impl Display for Justification {
             Cornered => "Touches 2 islands",
             SeaTrapped => "Sea must be contiguous",
             ConnectsEdges => "Connects edges",
+            AllPathsIntersect => "All possibilities overlap",
+            AllPathsBorder => "All possibilities border this",
+            SeaComplete => "Sea is complete",
         };
 
         write!(f, "{}", reason)

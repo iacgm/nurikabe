@@ -71,7 +71,7 @@ impl<'a> Annotation<'a> {
 
             for &island in &board.islands {
                 if self.possible_islands[r][c].contains(&island)
-                    && !island_reaches(board, self, island, (r, c))
+                    && !island_reaches(self, island, (r, c))
                 {
                     self.possible_islands[r][c].remove(&island);
                     changed = true;
