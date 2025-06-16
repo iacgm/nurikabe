@@ -11,3 +11,8 @@ pub use solve::*;
 pub use ui::*;
 pub use utils::*;
 pub use annotation::*;
+
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;

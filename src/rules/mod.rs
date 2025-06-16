@@ -11,8 +11,8 @@ mod finished;
 mod one_way;
 mod pool;
 mod reachable;
-mod sea_trapped;
 mod sea_complete;
+mod sea_trapped;
 
 use all_paths_border::*;
 use all_paths_intersect::*;
@@ -23,8 +23,8 @@ use finished::*;
 use one_way::*;
 use pool::*;
 use reachable::*;
-use sea_trapped::*;
 use sea_complete::*;
+use sea_trapped::*;
 
 pub type Rule = fn(&Annotation) -> Option<Update>;
 

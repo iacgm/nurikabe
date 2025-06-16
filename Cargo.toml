@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 ratatui = { version = "0.30.0-alpha.0" }
+mimalloc = "*"
+rustc-hash = "2.1.1"

@@ -109,13 +109,10 @@ pub fn island_reaches(note: &Annotation, island: Island, coord: Coord) -> bool {
             return true;
         }
 
-        for nt in neighbors(note.board, curr) {
-            if dfs(note, nt, goal, visited, island, limit - 1) {
-                return true;
-            }
-        }
-
-        false
+        neighbors(note.board, curr)
+            .into_iter()
+            .filter(|&c| note.board[c] != Sea)
+            .any(|c| dfs(note, c, goal, visited, island, limit - 1))
     }
 
     let Island { r, c, n } = island;
@@ -134,7 +131,7 @@ pub fn enumerate_island_paths(
     fn dfs<'a>(
         note: &'a Annotation,
         island: Island,
-        current: Vec<Coord>,
+        mut current: Vec<Coord>,
     ) -> Box<dyn Iterator<Item = Vec<Coord>> + 'a> {
         if current.len() == island.n {
             return Box::new(once(current.clone()));
@@ -149,24 +146,36 @@ pub fn enumerate_island_paths(
             reachable.retain(|t| t > prev || news.contains(t));
         }
 
-        Box::new(
-            reachable
-                .clone()
-                .into_iter()
-                .filter(move |&(r, c)| note.possible_islands[r][c].contains(&island))
-                .flat_map(move |n| {
-                    let mut new = current.clone();
-                    new.push(n);
+        reachable.retain(|&(r, c)| note.possible_islands[r][c].contains(&island));
+        reachable.sort();
 
-                    dfs(note, island, new)
-                }),
-        )
+        if reachable.is_empty() {
+            return Box::new([].into_iter());
+        }
+
+        let f = reachable[0];
+
+        if note.board[f] == Land {
+            current.push(f);
+            return dfs(note, island, current);
+        }
+
+        Box::new(reachable.clone().into_iter().flat_map(move |n| {
+            let mut new = current.clone();
+            new.push(n);
+
+            dfs(note, island, new)
+        }))
     }
 
     let ic = (island.r, island.c);
     dfs(note, island, vec![ic]).filter(move |path| {
-        !note.board.iter().any(|(c, t)| {
-            t == Land && note.island(c) == Some(island) && !path.contains(&c)
-        })
+        let surrounding = surrounding(note.board, path);
+
+        !note
+            .board
+            .iter()
+            .any(|(c, t)| t == Land && note.island(c) == Some(island) && !path.contains(&c))
+            && !surrounding.iter().any(|&c| note.board[c] == Land)
     })
 }
