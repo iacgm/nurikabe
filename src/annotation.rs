@@ -2,46 +2,97 @@ use super::*;
 
 use rustc_hash::FxHashSet as Set;
 
-pub struct Annotation<'a> {
-    pub possible_islands: Grid<Set<Island>>,
-    pub board: &'a Board,
+#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+pub enum Possibility {
+    Isle(Island),
+    Sea,
 }
 
-impl<'a> Annotation<'a> {
-    pub fn new(board: &'a Board) -> Self {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Volume {
+    Loud(Reason),  // Display rule
+    Quiet(Reason), // Knowledge updated, but don't display
+    Nil,
+}
+
+pub struct Knowledge {
+    pub reason: Volume, // Gets disabled when we make a new change
+    islands: Vec<Island>,
+    possibilities: Grid<Set<Possibility>>, // None = Sea
+}
+
+impl Knowledge {
+    pub fn new(board: &Board) -> Self {
+        use Possibility::*;
+        use Volume::*;
+
         let (h, w) = board.dims();
-        let island_set = Set::from_iter(board.islands.iter().copied());
-        let mut this = Self {
+
+        let mut possibility_space = Set::from_iter(board.islands.iter().copied().map(Isle));
+        possibility_space.insert(Sea);
+
+        let mut possibilities = vec![vec![possibility_space.clone(); w]; h];
+
+        for &Island { r, c, n } in board.islands.iter() {
+            possibilities[r][c] = [Isle((r, c, n).into())].into_iter().collect();
+        }
+
+        Self {
+            reason: Nil,
+            islands: board.islands.clone(),
             // Initially assume any island could reach any tile
-            possible_islands: vec![vec![island_set; w]; h],
-            board,
-        };
+            possibilities,
+        }
+    }
 
-        loop {
-            let mut changed = false;
+    pub fn board(&self) -> Board {
+        let h = self.possibilities.len();
+        let w = self.possibilities[0].len();
 
-            // Fill in islands we already know
-            changed |= this.fill_islands(board);
+        let mut board = Board::from_islands(h, w, self.islands.iter().copied());
 
-            // Empty out islands which are already sea
-            changed |= this.remove_seas(board);
-
-            // Indicate which islands each tile may be a part of
-            // Loop since each pass may inform later passes
-            while this.reachability_pass(board) {
-                changed = true;
-            }
-
-            if changed {
-                break;
+        for r in 0..h {
+            for c in 0..w {
+                if let Some(tile) = self.tile_known((r, c)) {
+                    board[(r, c)] = tile;
+                }
             }
         }
 
-        this
+        board
     }
 
-    pub fn island(&self, (r, c): Coord) -> Option<Island> {
-        let is = &self.possible_islands[r][c];
+    pub fn get_mut(&mut self, (r, c): Coord) -> &mut Set<Possibility> {
+        &mut self.possibilities[r][c]
+    }
+
+    pub fn get(&self, (r, c): Coord) -> &Set<Possibility> {
+        &self.possibilities[r][c]
+    }
+
+    pub fn known_sea(&self, c: Coord) -> bool {
+        use Possibility::*;
+        self.if_known(c) == Some(Sea)
+    }
+
+    pub fn known_land(&self, c: Coord) -> bool {
+        use Possibility::*;
+        !self.get(c).contains(&Sea)
+    }
+
+    pub fn tile_known(&self, c: Coord) -> Option<Tile> {
+        use Tile::*;
+        if self.known_land(c) {
+            Some(Land)
+        } else if self.known_sea(c) {
+            Some(Water)
+        } else {
+            None
+        }
+    }
+
+    pub fn if_known(&self, (r, c): Coord) -> Option<Possibility> {
+        let is = &self.possibilities[r][c];
         if is.len() == 1 {
             is.iter().copied().next()
         } else {
@@ -49,53 +100,58 @@ impl<'a> Annotation<'a> {
         }
     }
 
-    fn fill_islands(&mut self, board: &Board) -> bool {
-        let mut changed = false;
-        for &island in &board.islands {
-            let Island { r, c, .. } = island;
-            let mut area = area(board, (r, c));
-            area.extend(&surrounding(board, &area));
+    pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
+        use Possibility::*;
+        use Volume::*;
+        let was_known = self.tile_known(c).is_some();
 
-            for &(r, c) in &area {
-                let possibles = &mut self.possible_islands[r][c];
-                changed |= possibles.len() != 1;
-                possibles.clear();
-                possibles.insert(island);
-            }
+        let possibilities = self.get_mut(c);
+        if !possibilities.remove(&Isle(i)) {
+            return;
         }
-        changed
+
+        if self.tile_known(c).is_some() && !was_known {
+            self.reason.set(Loud(reason));
+        } else {
+            self.reason.set(Quiet(reason));
+        }
     }
 
-    fn remove_seas(&mut self, board: &Board) -> bool {
-        let mut changed = false;
-        for ((r, c), t) in board.iter() {
-            if t == Sea {
-                let possibles = &mut self.possible_islands[r][c];
-                changed |= !possibles.is_empty();
-                possibles.clear();
-            }
+    pub fn set_land(&mut self, reason: Reason, c: Coord) {
+        use Possibility::*;
+        use Volume::*;
+        if !self.known_land(c) {
+            self.reason = Loud(reason);
+            self.get_mut(c).remove(&Sea);
         }
-        changed
     }
 
-    fn reachability_pass(&mut self, board: &Board) -> bool {
-        let mut changed = false;
-
-        for ((r, c), t) in board.iter() {
-            if t == Land {
-                continue;
-            }
-
-            for &island in &board.islands {
-                if self.possible_islands[r][c].contains(&island)
-                    && !island_reaches(self, island, (r, c))
-                {
-                    self.possible_islands[r][c].remove(&island);
-                    changed = true;
-                }
-            }
+    pub fn set_sea(&mut self, reason: Reason, c: Coord) {
+        use Possibility::*;
+        use Volume::*;
+        if !self.known_sea(c) {
+            self.reason = Loud(reason);
+            self.get_mut(c).retain(|p| p == &Sea);
         }
+    }
+}
 
-        changed
+impl Volume {
+    pub fn set(&mut self, other: Self) {
+        use Volume::*;
+        if let (Nil | Quiet(_), Loud(r)) = (*self, other) {
+            *self = Loud(r)
+        };
+    }
+
+    pub fn is_set(&self) -> bool {
+        !matches!(self, Self::Nil)
+    }
+
+    pub fn take(&mut self) -> Volume {
+        use Volume::*;
+        let reason = *self;
+        *self = Nil;
+        reason
     }
 }

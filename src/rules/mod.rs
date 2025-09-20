@@ -10,7 +10,6 @@ mod distance;
 mod finished;
 mod one_way;
 mod pool;
-mod reachable;
 mod sea_complete;
 mod sea_trapped;
 
@@ -22,16 +21,14 @@ use distance::*;
 use finished::*;
 use one_way::*;
 use pool::*;
-use reachable::*;
 use sea_complete::*;
 use sea_trapped::*;
 
-pub type Rule = fn(&Annotation) -> Option<Update>;
+pub type Rule = fn(&mut Knowledge);
 
 pub const RULES: &[Rule] = &[
     sea_complete,
     finished,
-    reachability,
     cornered,
     one_way,
     sea_trapped,
@@ -42,58 +39,8 @@ pub const RULES: &[Rule] = &[
     all_paths_border,
 ];
 
-#[derive(Default)]
-pub struct Update {
-    pub justification: Justification,
-    pub land: Vec<Coord>,
-    pub sea: Vec<Coord>,
-}
-
-impl Update {
-    pub fn new(justification: Justification) -> Self {
-        Self {
-            justification,
-            land: vec![],
-            sea: vec![],
-        }
-    }
-
-    pub fn apply_to(&self, board: &mut Board) {
-        for &coord in &self.sea {
-            board[coord] = Sea;
-        }
-
-        for &coord in &self.land {
-            board[coord] = Land;
-        }
-    }
-
-    pub fn set(&mut self, coord: Coord, tile: Tile) {
-        let v = match tile {
-            Sea => &mut self.sea,
-            Land => &mut self.land,
-            _ => unreachable!(),
-        };
-
-        if !v.contains(&coord) {
-            v.push(coord)
-        }
-    }
-
-    pub fn check(mut self, board: &Board) -> Option<Self> {
-        self.land.retain(|&(r, c)| board.tiles[r][c] != Land);
-        self.sea.retain(|&(r, c)| board.tiles[r][c] != Sea);
-
-        if self.land.is_empty() && self.sea.is_empty() {
-            None
-        } else {
-            Some(self)
-        }
-    }
-}
-
-#[derive(Default, Debug)]
-pub enum Justification {
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum Reason {
     SeaComplete,
     ConnectsEdges,
     Cornered,
@@ -109,9 +56,9 @@ pub enum Justification {
     BruteForce,
 }
 
-impl Display for Justification {
+impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Justification::*;
+        use Reason::*;
         let reason = match self {
             TooFar => "Too far from any island",
             Unreachable => "Not reachable by any island",

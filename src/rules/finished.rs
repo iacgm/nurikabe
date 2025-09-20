@@ -1,25 +1,23 @@
 use super::*;
 
-pub fn finished(note: &Annotation) -> Option<Update> {
-    let mut update = Update::new(Justification::Finished);
-    let board = note.board;
+pub fn finished(knowledge: &mut Knowledge) {
+    use Possibility::*;
+    let board = knowledge.board();
     for (coord, t) in board.iter() {
         if t != Land {
             continue;
         }
 
-        let Some(Island { n, .. }) = note.island(coord) else {
+        let Some(Isle(Island { n, .. })) = knowledge.if_known(coord) else {
             continue;
         };
 
-        let area = area(board, coord);
+        let area = area(&board, coord);
 
         if area.len() == n {
-            for n in surrounding(board, &area) {
-                update.set(n, Sea);
+            for n in surrounding(&board, &area) {
+                knowledge.set_sea(Reason::Finished, n);
             }
         }
     }
-
-    update.check(board)
 }

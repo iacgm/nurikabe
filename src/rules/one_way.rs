@@ -1,35 +1,29 @@
 use super::*;
 
-pub fn one_way(note: &Annotation) -> Option<Update> {
-    let mut update = Update::new(Justification::OneWayOut);
+pub fn one_way(knowledge: &mut Knowledge) {
+    let board = knowledge.board();
+    for (coord, tile) in board.iter() {
+        if tile == Empty {
+            continue;
+        }
 
-    let board = note.board;
-    let (h, w) = board.dims();
-    for r in 0..h {
-        for c in 0..w {
-            let coord = (r, c);
-            let tile = board[coord];
+        let area = area(&board, coord);
+        let surrounding = surrounding(&board, &area);
 
-            if tile == Empty {
-                continue;
-            }
+        let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
 
-            let area = area(board, coord);
-            let surrounding = surrounding(board, &area);
+        let Some(&empty) = empties.next() else {
+            continue;
+        };
 
-            let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
+        if empties.next().is_some() {
+            continue;
+        }
 
-            let Some(&empty) = empties.next() else {
-                continue;
-            };
-
-            if empties.next().is_some() {
-                continue;
-            }
-
-            update.set(empty, tile);
+        if tile == Land {
+            knowledge.set_land(Reason::OneWayOut, empty);
+        } else {
+            knowledge.set_sea(Reason::OneWayOut, empty);
         }
     }
-
-    update.check(board)
 }

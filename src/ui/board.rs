@@ -9,12 +9,12 @@ use ratatui::{
 
 use super::*;
 
-pub struct Delta<'a>(pub &'a Board, pub &'a Update);
+pub struct Diff<'a>(pub &'a Board, pub &'a Board); // (Current, previous)
 
-impl<'a> Widget for Delta<'a> {
+impl<'a> Widget for Diff<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let board = self.0;
-        let update = self.1;
+        let prev = self.1;
 
         let title = Line::from("Board".bold().blue());
         let block = Block::bordered()
@@ -26,9 +26,10 @@ impl<'a> Widget for Delta<'a> {
         for (r, row) in board.tiles.iter().enumerate() {
             let mut line = vec![];
             for (c, tile) in row.iter().enumerate() {
-                let color = if update.sea.contains(&(r, c)) {
+                let coord = (r, c);
+                let color = if board[coord] == Water && prev[coord] == Empty {
                     Color::Cyan
-                } else if update.land.contains(&(r, c)) {
+                } else if board[coord] == Land && prev[coord] == Empty {
                     Color::LightGreen
                 } else {
                     tile.color()
@@ -38,9 +39,7 @@ impl<'a> Widget for Delta<'a> {
                     Some(Island { n, .. }) => {
                         format!("{:2}", n)
                     }
-                    _ => {
-                        format!("  ")
-                    }
+                    _ => "  ".to_string(),
                 };
                 line.push(text.bg(color));
             }
@@ -70,6 +69,6 @@ impl<'a> Widget for Delta<'a> {
 
 impl Widget for &Board {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        Delta(self, &Update::default()).render(area, buf)
+        Diff(self, self).render(area, buf)
     }
 }

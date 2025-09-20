@@ -2,12 +2,13 @@ use rustc_hash::FxHashSet as HashSet;
 
 use super::*;
 
-pub fn all_paths_intersect(note: &Annotation) -> Option<Update> {
-    let mut islands = note.board.islands.clone();
+pub fn all_paths_intersect(knowledge: &mut Knowledge) {
+    let board = knowledge.board();
+    let mut islands = board.islands.clone();
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
-        let mut paths = enumerate_island_paths(note, is);
+        let mut paths = enumerate_island_paths(knowledge, is);
 
         let Some(intersection) = paths.next() else {
             continue;
@@ -26,16 +27,12 @@ pub fn all_paths_intersect(note: &Annotation) -> Option<Update> {
         }
 
         if !intersection.is_empty() {
-            let mut update = Update::new(Justification::AllPathsIntersect);
             for cell in intersection {
-                update.set(cell, Land);
+                knowledge.set_land(Reason::AllPathsIntersect, cell);
             }
-            let try_update = update.check(note.board);
-            if try_update.is_some() {
-                return try_update;
+            if knowledge.reason.is_set() {
+                return;
             }
         }
     }
-
-    None
 }

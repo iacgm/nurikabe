@@ -1,16 +1,16 @@
 use std::io;
 
 use ratatui::{
-    DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Constraint, Layout},
     style::{Style, Stylize},
     symbols::border,
     text::Line,
     widgets::{Block, List, ListState},
+    DefaultTerminal, Frame,
 };
 
-use crate::ui::board::Delta;
+use crate::ui::board::Diff;
 
 use super::*;
 
@@ -80,10 +80,10 @@ impl SolverScreen {
         let mut list_entries = vec!["Initial Board".into()];
         list_entries.extend(
             self.solution
-                .logic
+                .reasons
                 .iter()
                 .enumerate()
-                .map(|(i, u)| format!("{:2}: {}", i+1, u.justification)),
+                .map(|(i, r)| format!("{:2}: {}", i + 1, r)),
         );
         list_entries.push("Final Board".into());
 
@@ -107,8 +107,8 @@ impl SolverScreen {
         if selected == 0 || selected == self.solution.states.len() - 1 {
             frame.render_widget(board, board_area);
         } else {
-            let update = &self.solution.logic[selected - 1];
-            frame.render_widget(Delta(board, update), board_area);
+            let prev = &self.solution.states[selected - 1];
+            frame.render_widget(Diff(board, prev), board_area);
         }
     }
 }

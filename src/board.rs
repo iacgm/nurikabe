@@ -24,7 +24,7 @@ pub struct Board {
 pub enum Tile {
     #[default]
     Empty,
-    Sea,
+    Water,
     Land,
 }
 
@@ -101,7 +101,7 @@ impl Tile {
         match self {
             Land => Rgb(10, 80, 10),
             Empty => Black,
-            Sea => Blue,
+            Water => Blue,
         }
     }
 }

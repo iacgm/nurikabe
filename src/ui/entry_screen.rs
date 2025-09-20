@@ -4,7 +4,6 @@ use std::{
 };
 
 use ratatui::{
-    DefaultTerminal, Frame,
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Constraint, Layout, Rect},
@@ -12,6 +11,7 @@ use ratatui::{
     symbols::border,
     text::Line,
     widgets::{Block, Paragraph, Widget},
+    DefaultTerminal, Frame,
 };
 
 use super::*;
@@ -103,8 +103,8 @@ impl EntryScreen {
                 self.board.remove_island(self.cursor);
                 let tile = &mut self.board[self.cursor];
                 *tile = match tile {
-                    Empty => Sea,
-                    Sea => Land,
+                    Empty => Water,
+                    Water => Land,
                     Land => Empty,
                 };
             }

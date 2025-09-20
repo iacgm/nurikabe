@@ -2,10 +2,9 @@ use rustc_hash::FxHashSet as HashSet;
 
 use super::*;
 
-pub fn connects_edges(note: &Annotation) -> Option<Update> {
-    let mut update = Update::new(Justification::ConnectsEdges);
-
-    let board = note.board;
+pub fn connects_edges(knowledge: &mut Knowledge) {
+    use Possibility::*;
+    let board = knowledge.board();
     let (h, w) = board.dims();
 
     let mut grounded: HashSet<Island> = Default::default(); // Islands which touch the edge of the board
@@ -23,7 +22,7 @@ pub fn connects_edges(note: &Annotation) -> Option<Update> {
                 continue;
             }
 
-            let Some(i) = note.island(coord) else {
+            let Some(Isle(i)) = knowledge.if_known(coord) else {
                 continue;
             };
 
@@ -31,8 +30,8 @@ pub fn connects_edges(note: &Annotation) -> Option<Update> {
                 grounded.insert(i);
             }
 
-            let area = area(board, coord);
-            stack.extend(area.iter().flat_map(|&t| corners(board, t)));
+            let area = area(&board, coord);
+            stack.extend(area.iter().flat_map(|&t| corners(&board, t)));
         }
     };
 
@@ -55,11 +54,17 @@ pub fn connects_edges(note: &Annotation) -> Option<Update> {
                 continue;
             }
 
-            let mut grounded_is = neighbors(board, coord)
+            let mut grounded_is = neighbors(&board, coord)
                 .into_iter()
-                .chain(corners(board, coord).into_iter())
+                .chain(corners(&board, coord).into_iter())
                 .filter(|&c| board[c] == Land)
-                .filter_map(|c| note.island(c))
+                .filter_map(|c| {
+                    if let Some(Isle(i)) = knowledge.if_known(c) {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
                 .filter(|i| grounded.contains(i))
                 .collect::<Vec<_>>();
 
@@ -67,11 +72,9 @@ pub fn connects_edges(note: &Annotation) -> Option<Update> {
             grounded_is.dedup();
 
             if grounded_is.len() > 1 {
-                update.set(coord, Sea);
-                return update.check(board);
+                knowledge.set_sea(Reason::ConnectsEdges, coord);
+                return;
             }
         }
     }
-
-    update.check(board)
 }

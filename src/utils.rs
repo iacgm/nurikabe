@@ -89,64 +89,33 @@ pub fn surrounding(board: &Board, area: &Area) -> Area {
     all_neighbors
 }
 
-pub fn island_reaches(note: &Annotation, island: Island, coord: Coord) -> bool {
-    fn dfs(
-        note: &Annotation,
-        curr: Coord,
-        goal: Coord,
-        visited: &mut Vec<Coord>,
-        island: Island,
-        limit: usize,
-    ) -> bool {
-        let tile = note.board[curr];
-
-        let (r, c) = curr;
-        if limit == 0 || tile == Tile::Sea || !note.possible_islands[r][c].contains(&island) {
-            return false;
-        }
-
-        if curr == goal {
-            return true;
-        }
-
-        neighbors(note.board, curr)
-            .into_iter()
-            .filter(|&c| note.board[c] != Sea)
-            .any(|c| dfs(note, c, goal, visited, island, limit - 1))
-    }
-
-    let Island { r, c, n } = island;
-    let ic = (r, c);
-
-    let area = area(&note.board, ic);
-
-    area.iter()
-        .any(|&ic| dfs(note, ic, coord, &mut vec![], island, n + 1 - area.len()))
-}
-
 pub fn enumerate_island_paths(
-    note: &Annotation,
+    note: &Knowledge,
     island: Island,
 ) -> impl Iterator<Item = Vec<Coord>> {
+    use Possibility::*;
+
     fn dfs<'a>(
-        note: &'a Annotation,
+        note: &'a Knowledge,
         island: Island,
         mut current: Vec<Coord>,
     ) -> Box<dyn Iterator<Item = Vec<Coord>> + 'a> {
+        let board = note.board();
+
         if current.len() == island.n {
             return Box::new(once(current.clone()));
         }
 
-        let mut reachable = surrounding(note.board, &current);
+        let mut reachable = surrounding(&board, &current);
 
         // At first step, no lexicographic ordering required
         if current.len() != 1 {
             let prev = current.last().unwrap();
-            let news = neighbors(note.board, *prev);
+            let news = neighbors(&board, *prev);
             reachable.retain(|t| t > prev || news.contains(t));
         }
 
-        reachable.retain(|&(r, c)| note.possible_islands[r][c].contains(&island));
+        reachable.retain(|&c| note.get(c).contains(&Isle(island)));
         reachable.sort();
 
         if reachable.is_empty() {
@@ -155,7 +124,7 @@ pub fn enumerate_island_paths(
 
         let f = reachable[0];
 
-        if note.board[f] == Land {
+        if board[f] == Land {
             current.push(f);
             return dfs(note, island, current);
         }
@@ -168,14 +137,15 @@ pub fn enumerate_island_paths(
         }))
     }
 
+    let board = note.board();
+
     let ic = (island.r, island.c);
     dfs(note, island, vec![ic]).filter(move |path| {
-        let surrounding = surrounding(note.board, path);
+        let surrounding = surrounding(&board, path);
 
-        !note
-            .board
+        !board
             .iter()
-            .any(|(c, t)| t == Land && note.island(c) == Some(island) && !path.contains(&c))
-            && !surrounding.iter().any(|&c| note.board[c] == Land)
+            .any(|(c, t)| t == Land && note.if_known(c) == Some(Isle(island)) && !path.contains(&c))
+            && !surrounding.iter().any(|&c| board[c] == Land)
     })
 }

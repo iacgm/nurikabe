@@ -1,23 +1,19 @@
 use super::*;
 
-pub fn sea_complete(note: &Annotation) -> Option<Update> {
-    let sea_size = note.board.iter().filter(|&(_, t)| t == Sea).count();
-    let land_size = note.board.islands.iter().map(|i| i.n).sum::<usize>();
-    let (h, w) = note.board.dims();
+pub fn sea_complete(knowledge: &mut Knowledge) {
+    let board = knowledge.board();
+
+    let sea_size = board.iter().filter(|&(_, t)| t == Water).count();
+    let land_size = board.islands.iter().map(|i| i.n).sum::<usize>();
+    let (h, w) = board.dims();
 
     if sea_size + land_size == h * w {
-        let mut update = Update::new(Justification::SeaComplete);
-
-        for (c, t) in note.board.iter() {
+        for (c, t) in board.iter() {
             if t != Empty {
                 continue;
             }
 
-            update.set(c, Land);
+            knowledge.set_land(Reason::SeaComplete, c);
         }
-
-        update.check(note.board)
-    } else {
-        None
     }
 }

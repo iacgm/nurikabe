@@ -13,37 +13,47 @@ use super::*;
 
 pub struct Solution {
     pub states: Vec<Board>,
-    pub logic: Vec<Update>,
+    pub reasons: Vec<Reason>,
     pub solved: bool,
     pub time: f32,
 }
 
 pub fn search_solution(board: Board) -> Solution {
-    let mut state = board.clone();
-    let mut states = vec![board];
-    let mut logic = vec![];
+    let mut states = vec![board.clone()];
+    let mut reasons = vec![];
+
+    let mut knowledge = Knowledge::new(&board);
 
     let start = Instant::now();
     'solve: loop {
-        let note = Annotation::new(&state);
         for rule in RULES {
-            if let Some(update) = rule(&note) {
-                states.push(state.clone());
-                update.apply_to(&mut state);
-                logic.push(update);
+            use Volume::*;
 
-                continue 'solve;
+            rule(&mut knowledge);
+            let reason = knowledge.reason.take();
+            match reason {
+                Loud(reason) => {
+                    states.push(knowledge.board());
+                    reasons.push(reason);
+
+                    continue 'solve;
+                }
+                Quiet(_) => {
+                    continue 'solve;
+                }
+                Nil => (),
             }
         }
 
         // Push final state, so we have completed board at the end
-        let solved = state.solved();
-        states.push(state);
+        let board = knowledge.board();
+        let solved = board.solved();
+        states.push(board);
 
         let time = Instant::now().duration_since(start).as_secs_f32();
         break Solution {
             states,
-            logic,
+            reasons,
             solved,
             time,
         };
@@ -62,7 +72,7 @@ impl Widget for &Solution {
 
         let length_line = Line::from(vec![
             "Number of steps: ".into(),
-            format!("{}", self.logic.len()).bold().blue(),
+            format!("{}", self.states.len() - 1).bold().blue(),
         ]);
 
         let time_line = Line::from(vec![
