@@ -10,6 +10,7 @@ mod distance;
 mod finished;
 mod one_way;
 mod pool;
+mod reachability;
 mod sea_complete;
 mod sea_trapped;
 
@@ -21,6 +22,7 @@ use distance::*;
 use finished::*;
 use one_way::*;
 use pool::*;
+use reachability::*;
 use sea_complete::*;
 use sea_trapped::*;
 
@@ -31,7 +33,8 @@ pub const RULES: &[Rule] = &[
     finished,
     cornered,
     one_way,
-    sea_trapped,
+    trapped,
+    reachability,
     connects_edges,
     pool,
     distance,
@@ -43,8 +46,8 @@ pub const RULES: &[Rule] = &[
 pub enum Reason {
     SeaComplete,
     ConnectsEdges,
-    Cornered,
-    SeaTrapped,
+    TouchesIslands,
+    Trapped,
     TooFar,
     Unreachable,
     Pool,
@@ -66,8 +69,8 @@ impl Display for Reason {
             Finished => "Island Complete",
             OneWayOut => "Only one way for paths to go",
             BruteForce => "Brute Force",
-            Cornered => "Touches 2 islands",
-            SeaTrapped => "Sea must be contiguous",
+            TouchesIslands => "Borders islands",
+            Trapped => "Sea must be contiguous",
             ConnectsEdges => "Connects edges",
             AllPathsIntersect => "All possibilities overlap",
             AllPathsBorder => "All possibilities border this",

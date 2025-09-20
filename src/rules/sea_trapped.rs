@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn sea_trapped(knowledge: &mut Knowledge) {
+pub fn trapped(knowledge: &mut Knowledge) {
     let board = knowledge.board();
     let (h, w) = board.dims();
     for r in 0..h {
@@ -26,7 +26,7 @@ pub fn sea_trapped(knowledge: &mut Knowledge) {
 
             if trapped && islands.len() == 1 {
                 for &t in &area {
-                    knowledge.set_land(Reason::SeaTrapped, t);
+                    knowledge.set_land(Reason::Trapped, t);
                 }
             }
         }

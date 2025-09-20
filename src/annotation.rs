@@ -1,6 +1,6 @@
 use super::*;
 
-use rustc_hash::FxHashSet as Set;
+pub use rustc_hash::FxHashSet as Set;
 
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Possibility {
@@ -98,6 +98,10 @@ impl Knowledge {
         } else {
             None
         }
+    }
+
+    pub fn island_set(&self) -> &Vec<Island> {
+        &self.islands
     }
 
     pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
