@@ -108,7 +108,7 @@ impl EntryScreen {
                     Land => Empty,
                 };
             }
-            Char(c @ '0'..'9') => {
+            Char(c @ '0'..='9') => {
                 self.cursor_clock = Instant::now();
                 let n = c.to_digit(10).unwrap() as usize;
 
@@ -146,6 +146,12 @@ impl EntryScreen {
 
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area())
+    }
+}
+
+impl Default for EntryScreen {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

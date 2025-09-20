@@ -45,36 +45,31 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
         ground((h - 1, c));
     }
 
-    for r in 0..h {
-        for c in 0..w {
-            let coord = (r, c);
-            let tile = board[coord];
+    for (coord, tile) in board.iter() {
+        if tile != Empty {
+            continue;
+        }
 
-            if tile != Empty {
-                continue;
-            }
+        let mut grounded_is = neighbors(&board, coord)
+            .into_iter()
+            .chain(corners(&board, coord).into_iter())
+            .filter(|&c| board[c] == Land)
+            .filter_map(|c| {
+                if let Some(Isle(i)) = knowledge.if_known(c) {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .filter(|i| grounded.contains(i))
+            .collect::<Vec<_>>();
 
-            let mut grounded_is = neighbors(&board, coord)
-                .into_iter()
-                .chain(corners(&board, coord).into_iter())
-                .filter(|&c| board[c] == Land)
-                .filter_map(|c| {
-                    if let Some(Isle(i)) = knowledge.if_known(c) {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                })
-                .filter(|i| grounded.contains(i))
-                .collect::<Vec<_>>();
+        grounded_is.sort();
+        grounded_is.dedup();
 
-            grounded_is.sort();
-            grounded_is.dedup();
-
-            if grounded_is.len() > 1 {
-                knowledge.set_sea(Reason::ConnectsEdges, coord);
-                return;
-            }
+        if grounded_is.len() > 1 {
+            knowledge.set_sea(Reason::ConnectsEdges, coord);
+            return;
         }
     }
 }
