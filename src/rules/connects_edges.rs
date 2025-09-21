@@ -1,4 +1,4 @@
-use rustc_hash::FxHashSet as HashSet;
+use rustc_hash::FxHashMap as HashMap;
 
 use super::*;
 
@@ -7,9 +7,14 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
     let board = knowledge.board();
     let (h, w) = board.dims();
 
-    let mut grounded: HashSet<Island> = Default::default(); // Islands which touch the edge of the board
+    // Map island to island grounding it
+    let mut grounded: HashMap<Island, Island> = Default::default();
 
     let mut ground = |coord: Coord| {
+        let Some(Isle(edge_is)) = knowledge.if_known(coord) else {
+            return;
+        };
+
         let mut stack = vec![coord];
         let mut visited = vec![];
         while let Some(coord) = stack.pop() {
@@ -26,9 +31,7 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
                 continue;
             };
 
-            if !grounded.contains(&i) {
-                grounded.insert(i);
-            }
+            grounded.insert(i, edge_is);
 
             let area = area(&board, coord);
             stack.extend(area.iter().flat_map(|&t| corners(&board, t)));
@@ -50,18 +53,15 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
             continue;
         }
 
-        let mut grounded_is = neighbors(&board, coord)
+        let mut grounded_is = all_neighbors(&board, coord)
             .into_iter()
-            .chain(corners(&board, coord).into_iter())
-            .filter(|&c| board[c] == Land)
             .filter_map(|c| {
                 if let Some(Isle(i)) = knowledge.if_known(c) {
-                    Some(i)
+                    grounded.get(&i)
                 } else {
                     None
                 }
             })
-            .filter(|i| grounded.contains(i))
             .collect::<Vec<_>>();
 
         grounded_is.sort();
@@ -70,6 +70,16 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
         if grounded_is.len() > 1 {
             knowledge.set_sea(Reason::ConnectsEdges, coord);
             return;
+        }
+
+        // Edge connections are (literally) an edge case
+        let (r, c) = coord;
+        let is_edge = r == 0 || c == 0 || r == h - 1 || c == w - 1;
+        if let [island] = &grounded_is[..]
+            && is_edge
+            && !knowledge.get(coord).contains(&Isle(**island))
+        {
+            knowledge.set_sea(Reason::ConnectsEdges, coord);
         }
     }
 }

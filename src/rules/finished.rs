@@ -8,15 +8,19 @@ pub fn finished(knowledge: &mut Knowledge) {
             continue;
         }
 
-        let Some(Isle(Island { n, .. })) = knowledge.if_known(coord) else {
+        let Some(Isle(island)) = knowledge.if_known(coord) else {
             continue;
         };
 
         let area = area(&board, coord);
 
-        if area.len() == n {
+        if area.len() == island.n {
             for n in surrounding(&board, &area) {
                 knowledge.set_sea(Reason::Finished, n);
+            }
+
+            for (c, _) in board.iter().filter(|(c, _)| !area.contains(c)) {
+                knowledge.elim_island(Reason::Finished, c, island);
             }
         }
     }

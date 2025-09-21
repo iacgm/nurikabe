@@ -4,6 +4,12 @@ use super::*;
 
 pub type Area = Vec<Coord>;
 
+pub fn all_neighbors(board: &Board, c: Coord) -> Area {
+    let mut all = neighbors(board, c);
+    all.extend(corners(board, c));
+    all
+}
+
 pub fn neighbors(board: &Board, (r, c): Coord) -> Area {
     let mut neighbors = vec![];
 
