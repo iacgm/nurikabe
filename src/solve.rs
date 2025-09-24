@@ -12,33 +12,43 @@ use ratatui::{
 use super::*;
 
 pub struct Solution {
+    pub depth: usize,
     pub states: Vec<Board>,
     pub reasons: Vec<Reason>,
     pub solved: bool,
     pub time: f32,
 }
 
-pub fn search_solution(board: Board) -> Solution {
+pub fn solve(board: Board) -> Solution {
+    let mut knowledge = Knowledge::new(&board);
+
+    solve_knowing(&mut knowledge)
+}
+
+pub fn solve_knowing(knowledge: &mut Knowledge) -> Solution {
+    let board = knowledge.board();
     let mut states = vec![board.clone()];
     let mut reasons = vec![];
-
-    let mut knowledge = Knowledge::new(&board);
 
     let start = Instant::now();
     'solve: loop {
         for rule in RULES {
             use Volume::*;
 
-            rule(&mut knowledge);
+            rule(knowledge);
             let reason = knowledge.reason.take();
             match reason {
+                Contradiction => break,
                 Loud(reason) => {
                     states.push(knowledge.board());
                     reasons.push(reason);
+                    knowledge.depth = knowledge.depth.max(reason.depth());
 
                     continue 'solve;
                 }
-                Quiet(_) => {
+                Quiet(reason) => {
+                    knowledge.depth = knowledge.depth.max(reason.depth());
+
                     continue 'solve;
                 }
                 Nil => (),
@@ -47,11 +57,12 @@ pub fn search_solution(board: Board) -> Solution {
 
         // Push final state, so we have completed board at the end
         let board = knowledge.board();
-        let solved = board.solved();
+        let solved = knowledge.solved();
         states.push(board);
 
         let time = Instant::now().duration_since(start).as_secs_f32();
         break Solution {
+            depth: knowledge.depth,
             states,
             reasons,
             solved,
@@ -64,9 +75,12 @@ impl Widget for &Solution {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Line::from("Solution Info".blue().bold());
 
-        let solved_line = if self.solved {
-            "Full solution found".green().bold()
+        let solved_line = if self.solved && self.depth == 0 {
+            "Solution found without guessing".green().bold()
+        } else if self.solved {
+            "Solved with guesses".yellow().bold()
         } else {
+            // This should never happen anymore
             "No solution found".red().bold()
         };
 

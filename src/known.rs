@@ -10,12 +10,15 @@ pub enum Possibility {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Volume {
+    Contradiction,
     Loud(Reason),  // Display rule
     Quiet(Reason), // Knowledge updated, but don't display
     Nil,
 }
 
+#[derive(Clone)]
 pub struct Knowledge {
+    pub depth: usize,
     pub reason: Volume, // Gets disabled when we make a new change
     islands: Vec<Island>,
     possibilities: Grid<Set<Possibility>>, // None = Sea
@@ -38,6 +41,7 @@ impl Knowledge {
         }
 
         Self {
+            depth: 0,
             reason: Nil,
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
@@ -121,6 +125,11 @@ impl Knowledge {
         }
     }
 
+    // Acknowledge a contradiction
+    pub fn contradict(&mut self) {
+        self.reason = Volume::Contradiction;
+    }
+
     pub fn set_land(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
         use Volume::*;
@@ -137,6 +146,21 @@ impl Knowledge {
             self.reason = Loud(reason);
             self.get_mut(c).retain(|p| p == &Sea);
         }
+    }
+
+    pub fn bifurcate(&self) -> Self {
+        let mut copy = self.clone();
+        copy.depth += 1;
+        copy
+    }
+
+    pub fn grid(&self) -> &Grid<Set<Possibility>> {
+        &self.possibilities
+    }
+
+    pub fn solved(&self) -> bool {
+        use Volume::*;
+        self.reason != Contradiction && self.possibilities.iter().flatten().all(|s| s.len() == 1)
     }
 }
 

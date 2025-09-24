@@ -4,45 +4,69 @@ use super::*;
 
 mod all_paths_border;
 mod all_paths_intersect;
+mod borders_multiple;
 mod connects_edges;
-mod cornered;
+mod corner;
 mod distance;
 mod finished;
+mod guess;
+mod impossible;
+mod island_contra;
+mod no_space;
+mod noncontiguous;
 mod one_way;
-mod pool;
+mod pools;
 mod reachability;
 mod sea_complete;
 mod sea_trapped;
+mod wall_trick;
 
 use all_paths_border::*;
 use all_paths_intersect::*;
+use borders_multiple::*;
 use connects_edges::*;
-use cornered::*;
+use corner::*;
 use distance::*;
 use finished::*;
+use guess::*;
+use impossible::*;
+use island_contra::*;
+use no_space::*;
+use noncontiguous::*;
 use one_way::*;
-use pool::*;
+use pools::*;
 use reachability::*;
 use sea_complete::*;
 use sea_trapped::*;
+use wall_trick::*;
 
 pub type Rule = fn(&mut Knowledge);
 
 pub const RULES: &[Rule] = &[
+    // Contradiction rules
+    pools,
+    noncontiguous,
+    impossible,
+    no_space,
+    // Deduction rules
     sea_complete,
     finished,
     cornered,
+    borders_multiple,
     one_way,
     trapped,
-    reachability,
     connects_edges,
-    pool,
     distance,
+    reachability,
+    wall_trick,
     all_paths_intersect,
     all_paths_border,
+    // Resort to trial & error
+    island_contra,
+    // guess,
 ];
 
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Reason {
     SeaComplete,
     ConnectsEdges,
@@ -53,28 +77,43 @@ pub enum Reason {
     Pool,
     Finished,
     OneWayOut,
+    WallTrick,
     AllPathsIntersect,
     AllPathsBorder,
-    #[default]
-    BruteForce,
+    ByContradiction(usize, usize),
+    Bifurcation,
+}
+
+impl Reason {
+    pub fn depth(&self) -> usize {
+        use Reason::*;
+        match self {
+            ByContradiction(_, d) => *d,
+            _ => 0,
+        }
+    }
 }
 
 impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Reason::*;
         let reason = match self {
-            TooFar => "Too far from any island",
-            Unreachable => "Not reachable by any island",
+            TooFar => "No island near enough",
+            Unreachable => "Unreachable square",
             Pool => "L-Corner",
-            Finished => "Island Complete",
-            OneWayOut => "Only one way for paths to go",
-            BruteForce => "Brute Force",
-            TouchesIslands => "Borders islands",
+            Finished => "Island completed",
+            OneWayOut => "Only one way to go",
+            WallTrick => "Wall pattern",
+            TouchesIslands => "Borders separate islands",
             Trapped => "Sea must be contiguous",
             ConnectsEdges => "Connects edges",
-            AllPathsIntersect => "All possibilities overlap",
-            AllPathsBorder => "All possibilities border this",
-            SeaComplete => "Sea is complete",
+            AllPathsIntersect => "Island must pass square",
+            AllPathsBorder => "Island must border square",
+            SeaComplete => "Sea complete",
+            ByContradiction(l, d) => {
+                return write!(f, "Contradiction in {} steps (depth {})", l, d)
+            }
+            Bifurcation => "Guess",
         };
 
         write!(f, "{}", reason)

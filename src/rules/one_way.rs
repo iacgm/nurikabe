@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn one_way(knowledge: &mut Knowledge) {
-    let board = knowledge.board();
+pub fn one_way(known: &mut Knowledge) {
+    let board = known.board();
     for (coord, tile) in board.iter() {
         if tile == Empty {
             continue;
@@ -21,9 +21,9 @@ pub fn one_way(knowledge: &mut Knowledge) {
         }
 
         if tile == Land {
-            knowledge.set_land(Reason::OneWayOut, empty);
+            known.set_land(Reason::OneWayOut, empty);
         } else {
-            knowledge.set_sea(Reason::OneWayOut, empty);
+            known.set_sea(Reason::OneWayOut, empty);
         }
     }
 }

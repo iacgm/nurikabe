@@ -23,7 +23,7 @@ pub struct SolverScreen {
 impl SolverScreen {
     pub fn new(board: Board) -> Self {
         Self {
-            solution: search_solution(board),
+            solution: solve(board),
             list_state: ListState::default().with_selected(Some(0)),
             alive: true,
         }
@@ -70,7 +70,7 @@ impl SolverScreen {
         let area = center(frame.area(), Percentage(80), Percentage(80));
 
         let [solution_area, _, board_area] =
-            Layout::horizontal([Fill(1), Length(1), Fill(2)]).areas(area);
+            Layout::horizontal([Fill(3), Length(1), Fill(5)]).areas(area);
 
         let title = Line::from("Justification".bold().blue());
         let block = Block::bordered()

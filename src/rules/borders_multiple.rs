@@ -1,5 +1,5 @@
 use super::*;
-pub fn cornered(known: &mut Knowledge) {
+pub fn borders_multiple(known: &mut Knowledge) {
     use Possibility::*;
 
     let board = known.board();

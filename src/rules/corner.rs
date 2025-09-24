@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn pool(knowledge: &mut Knowledge) {
+pub fn cornered(knowledge: &mut Knowledge) {
     let board = knowledge.board();
     let (h, w) = board.dims();
 

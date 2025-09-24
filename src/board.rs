@@ -52,6 +52,11 @@ impl Board {
         (self.tiles.len(), self.tiles[0].len())
     }
 
+    pub fn contains(&self, (r, c): Coord) -> bool {
+        let (h, w) = self.dims();
+        r < h && c < w
+    }
+
     pub fn lookup_island(&self, (r, c): Coord) -> Option<Island> {
         self.islands.iter().copied().find(|i| i.r == r && i.c == c)
     }
