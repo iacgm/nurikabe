@@ -1,7 +1,6 @@
 use super::*;
 
-pub fn trapped(knowledge: &mut Knowledge) {
-    let board = knowledge.board();
+pub fn trapped(knowledge: &mut Knowledge, board: &Board) {
     let (h, w) = board.dims();
     for r in 0..h {
         for c in 0..w {
@@ -12,8 +11,8 @@ pub fn trapped(knowledge: &mut Knowledge) {
                 continue;
             }
 
-            let area = area(&board, coord);
-            let surrounding = surrounding(&board, &area);
+            let area = area(board, coord);
+            let surrounding = surrounding(board, &area);
 
             let trapped = surrounding.iter().all(|coord| board[*coord] == Land);
             let mut islands = surrounding

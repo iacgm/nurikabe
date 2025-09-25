@@ -2,9 +2,8 @@ use rustc_hash::FxHashMap as HashMap;
 
 use super::*;
 
-pub fn connects_edges(knowledge: &mut Knowledge) {
+pub fn connects_edges(knowledge: &mut Knowledge, board: &Board) {
     use Possibility::*;
-    let board = knowledge.board();
     let (h, w) = board.dims();
 
     // Map island to island grounding it
@@ -33,8 +32,8 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
 
             grounded.insert(i, edge_is);
 
-            let area = area(&board, coord);
-            stack.extend(area.iter().flat_map(|&t| corners(&board, t)));
+            let area = area(board, coord);
+            stack.extend(area.iter().flat_map(|&t| corners(board, t)));
         }
     };
 
@@ -53,7 +52,7 @@ pub fn connects_edges(knowledge: &mut Knowledge) {
             continue;
         }
 
-        let mut grounded_is = all_neighbors(&board, coord)
+        let mut grounded_is = all_neighbors(board, coord)
             .into_iter()
             .filter_map(|c| {
                 if let Some(Isle(i)) = knowledge.if_known(c) {

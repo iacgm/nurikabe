@@ -1,7 +1,6 @@
 use super::*;
 
-pub fn pools(known: &mut Knowledge) {
-    let board = known.board();
+pub fn pools(known: &mut Knowledge, board: &Board) {
     let (h, w) = board.dims();
 
     for r in 0..h - 1 {

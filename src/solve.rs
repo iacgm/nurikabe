@@ -31,10 +31,11 @@ pub fn solve_knowing(known: &mut Knowledge) -> Solution {
 
     let start = Instant::now();
     'solve: loop {
+        let board = known.board();
         for rule in RULES {
             use ReasonKind::*;
 
-            rule(known);
+            rule(known, &board);
             let reason = known.take_reason();
             match reason {
                 MaxDepthReached if known.depth == 0 => {

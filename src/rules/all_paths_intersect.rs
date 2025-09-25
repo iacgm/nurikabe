@@ -2,9 +2,8 @@ use rustc_hash::FxHashSet as HashSet;
 
 use super::*;
 
-pub fn all_paths_intersect(knowledge: &mut Knowledge) {
-    let board = knowledge.board();
-    let mut islands = board.islands.clone();
+pub fn all_paths_intersect(knowledge: &mut Knowledge, _: &Board) {
+    let mut islands = knowledge.island_set().clone();
     islands.sort_by_key(|i| i.n);
 
     for is in islands {

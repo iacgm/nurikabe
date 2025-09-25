@@ -1,8 +1,6 @@
 use super::*;
 
-pub fn distance(note: &mut Knowledge) {
-    let board = note.board();
-
+pub fn distance(known: &mut Knowledge, board: &Board) {
     for ((r, c), tile) in board.iter() {
         if tile != Empty {
             continue;
@@ -21,6 +19,8 @@ pub fn distance(note: &mut Knowledge) {
             }
         }
 
-        if too_far {}
+        if too_far {
+            known.set_sea(Reason::TooFar, (r, c));
+        }
     }
 }

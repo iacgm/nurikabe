@@ -1,8 +1,7 @@
 use super::*;
 
-pub fn wall_trick(known: &mut Knowledge) {
+pub fn wall_trick(known: &mut Knowledge, board: &Board) {
     use Possibility::*;
-    let board = known.board();
     for (c, _) in board.iter() {
         let flipped = [true, false];
         // # of 90 degree rotations

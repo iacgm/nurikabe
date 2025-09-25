@@ -1,8 +1,7 @@
 use super::*;
 
 // Checks that Sea+Empty tiles form a single connected component
-pub fn noncontiguous(known: &mut Knowledge) {
-    let board = known.board();
+pub fn noncontiguous(known: &mut Knowledge, board: &Board) {
     let count = board.iter().filter(|&(_, t)| t != Land).count();
 
     let Some(start) = board
@@ -12,7 +11,7 @@ pub fn noncontiguous(known: &mut Knowledge) {
         return;
     };
 
-    if count != flood_count(&board, start) {
+    if count != flood_count(board, start) {
         known.contradict();
     }
 }

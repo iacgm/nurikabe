@@ -1,7 +1,6 @@
 use super::*;
 
-pub fn cornered(knowledge: &mut Knowledge) {
-    let board = knowledge.board();
+pub fn cornered(knowledge: &mut Knowledge, board: &Board) {
     let (h, w) = board.dims();
 
     for r in 0..h - 1 {

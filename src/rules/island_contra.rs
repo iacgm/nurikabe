@@ -1,9 +1,8 @@
 use super::*;
 
 // We only apply this if there are 2 possibilities, otherwise we just us a generic guess
-pub fn island_contra(known: &mut Knowledge) {
+pub fn island_contra(known: &mut Knowledge, _: &Board) {
     use ReasonKind::*;
-
     let islands = known.island_set().clone();
     for is in islands {
         let paths = enumerate_island_paths(known, is).collect::<Vec<_>>();

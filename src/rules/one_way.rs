@@ -1,14 +1,13 @@
 use super::*;
 
-pub fn one_way(known: &mut Knowledge) {
-    let board = known.board();
+pub fn one_way(known: &mut Knowledge, board: &Board) {
     for (coord, tile) in board.iter() {
         if tile == Empty {
             continue;
         }
 
-        let area = area(&board, coord);
-        let surrounding = surrounding(&board, &area);
+        let area = area(board, coord);
+        let surrounding = surrounding(board, &area);
 
         let mut empties = surrounding.iter().filter(|&&c| board[c] == Empty);
 

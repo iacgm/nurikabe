@@ -1,9 +1,7 @@
 use super::*;
 
-pub fn reachability(known: &mut Knowledge) {
+pub fn reachability(known: &mut Knowledge, board: &Board) {
     use Possibility::*;
-
-    let board = known.board();
 
     for island in known.island_set().clone() {
         let mut possible_squares = board

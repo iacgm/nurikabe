@@ -105,9 +105,8 @@ pub fn enumerate_island_paths(
         note: &'a Knowledge,
         island: Island,
         mut current: Vec<Coord>,
+        board: Board,
     ) -> Box<dyn Iterator<Item = Vec<Coord>> + 'a> {
-        let board = note.board();
-
         if current.len() == island.n {
             return Box::new(once(current.clone()));
         }
@@ -132,21 +131,21 @@ pub fn enumerate_island_paths(
 
         if board[f] == Land {
             current.push(f);
-            return dfs(note, island, current);
+            return dfs(note, island, current, board);
         }
 
         Box::new(reachable.clone().into_iter().flat_map(move |n| {
             let mut new = current.clone();
             new.push(n);
 
-            dfs(note, island, new)
+            dfs(note, island, new, board.clone())
         }))
     }
 
     let board = note.board();
 
     let ic = (island.r, island.c);
-    dfs(note, island, vec![ic]).filter(move |path| {
+    dfs(note, island, vec![ic], board.clone()).filter(move |path| {
         let surrounding = surrounding(&board, path);
 
         !board

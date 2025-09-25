@@ -2,9 +2,8 @@ use rustc_hash::FxHashSet as HashSet;
 
 use super::*;
 
-pub fn all_paths_border(knowledge: &mut Knowledge) {
-    let mut islands = knowledge.board().islands.clone();
-    let board = knowledge.board();
+pub fn all_paths_border(knowledge: &mut Knowledge, board: &Board) {
+    let mut islands = knowledge.island_set().clone();
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
@@ -14,12 +13,12 @@ pub fn all_paths_border(knowledge: &mut Knowledge) {
             continue;
         };
 
-        let border = surrounding(&board, &path);
+        let border = surrounding(board, &path);
 
         let mut intersection: HashSet<(usize, usize)> = border.into_iter().collect();
 
         for path in paths {
-            let border = surrounding(&board, &path);
+            let border = surrounding(board, &path);
 
             let cells = HashSet::from_iter(border.into_iter());
 

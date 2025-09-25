@@ -40,7 +40,7 @@ use sea_complete::*;
 use sea_trapped::*;
 use wall_trick::*;
 
-pub type Rule = fn(&mut Knowledge);
+pub type Rule = fn(&mut Knowledge, &Board);
 
 pub const RULES: &[Rule] = &[
     // Contradiction rules

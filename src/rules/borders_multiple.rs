@@ -1,15 +1,14 @@
 use super::*;
-pub fn borders_multiple(known: &mut Knowledge) {
+pub fn borders_multiple(known: &mut Knowledge, board: &Board) {
     use Possibility::*;
 
-    let board = known.board();
     for (coord, tile) in board.iter() {
         if tile != Land {
             continue;
         }
 
-        let island = area(&board, coord);
-        let surrounding = surrounding(&board, &island);
+        let island = area(board, coord);
+        let surrounding = surrounding(board, &island);
 
         let mut possibilities = known.get(coord).clone();
         for &n in &island {

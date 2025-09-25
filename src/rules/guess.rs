@@ -1,9 +1,7 @@
 use super::*;
 
-pub fn guess(known: &mut Knowledge) {
+pub fn guess(known: &mut Knowledge, board: &Board) {
     use ReasonKind::*;
-
-    let board = known.board();
     let mut cells: Vec<_> = board
         .iter()
         .filter_map(|(c, t)| if t == Empty { Some(c) } else { None })

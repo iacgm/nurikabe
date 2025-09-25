@@ -1,8 +1,7 @@
 use super::*;
 
-pub fn finished(knowledge: &mut Knowledge) {
+pub fn finished(knowledge: &mut Knowledge, board: &Board) {
     use Possibility::*;
-    let board = knowledge.board();
     for (coord, t) in board.iter() {
         if t != Land {
             continue;
@@ -12,10 +11,10 @@ pub fn finished(knowledge: &mut Knowledge) {
             continue;
         };
 
-        let area = area(&board, coord);
+        let area = area(board, coord);
 
         if area.len() == island.n {
-            for n in surrounding(&board, &area) {
+            for n in surrounding(board, &area) {
                 knowledge.set_sea(Reason::Finished, n);
             }
 
