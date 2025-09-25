@@ -9,7 +9,8 @@ pub enum Possibility {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Volume {
+pub enum ReasonKind {
+    MaxDepthReached,
     Contradiction,
     Loud(Reason),  // Display rule
     Quiet(Reason), // Knowledge updated, but don't display
@@ -19,7 +20,8 @@ pub enum Volume {
 #[derive(Clone)]
 pub struct Knowledge {
     pub depth: usize,
-    pub reason: Volume, // Gets disabled when we make a new change
+    pub max_depth: usize,
+    pub reason: ReasonKind, // Gets disabled when we make a new change
     islands: Vec<Island>,
     possibilities: Grid<Set<Possibility>>, // None = Sea
 }
@@ -27,7 +29,7 @@ pub struct Knowledge {
 impl Knowledge {
     pub fn new(board: &Board) -> Self {
         use Possibility::*;
-        use Volume::*;
+        use ReasonKind::*;
 
         let (h, w) = board.dims();
 
@@ -42,6 +44,7 @@ impl Knowledge {
 
         Self {
             depth: 0,
+            max_depth: 0,
             reason: Nil,
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
@@ -110,7 +113,7 @@ impl Knowledge {
 
     pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
         use Possibility::*;
-        use Volume::*;
+        use ReasonKind::*;
         let was_known = self.tile_known(c).is_some();
 
         let possibilities = self.get_mut(c);
@@ -127,12 +130,12 @@ impl Knowledge {
 
     // Acknowledge a contradiction
     pub fn contradict(&mut self) {
-        self.reason = Volume::Contradiction;
+        self.reason = ReasonKind::Contradiction;
     }
 
     pub fn set_land(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
-        use Volume::*;
+        use ReasonKind::*;
         if !self.known_land(c) {
             self.reason = Loud(reason);
             self.get_mut(c).remove(&Sea);
@@ -141,17 +144,27 @@ impl Knowledge {
 
     pub fn set_sea(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
-        use Volume::*;
+        use ReasonKind::*;
         if !self.known_sea(c) {
             self.reason = Loud(reason);
             self.get_mut(c).retain(|p| p == &Sea);
         }
     }
 
-    pub fn bifurcate(&self) -> Self {
-        let mut copy = self.clone();
-        copy.depth += 1;
-        copy
+    pub fn raise_depth_limit(&mut self) {
+        self.max_depth += 1;
+    }
+
+    pub fn bifurcate(&mut self) -> Option<Self> {
+        use ReasonKind::*;
+        if self.depth < self.max_depth {
+            let mut copy = self.clone();
+            copy.depth += 1;
+            Some(copy)
+        } else {
+            self.reason = MaxDepthReached;
+            None
+        }
     }
 
     pub fn grid(&self) -> &Grid<Set<Possibility>> {
@@ -159,27 +172,36 @@ impl Knowledge {
     }
 
     pub fn solved(&self) -> bool {
-        use Volume::*;
-        self.reason != Contradiction && self.possibilities.iter().flatten().all(|s| s.len() == 1)
+        use ReasonKind::*;
+        self.reason != Contradiction
+            && self.reason != MaxDepthReached
+            && self.possibilities.iter().flatten().all(|s| s.len() == 1)
+    }
+
+    pub fn take_reason(&mut self) -> ReasonKind {
+        use ReasonKind::*;
+        let reason = self.reason;
+        match reason {
+            Loud(_) | Quiet(_) => {
+                self.reason = Nil;
+                self.max_depth = 1;
+            }
+            _ => (),
+        }
+        reason
     }
 }
 
-impl Volume {
+impl ReasonKind {
     pub fn set(&mut self, other: Self) {
-        use Volume::*;
+        use ReasonKind::*;
         if let (Nil | Quiet(_), Loud(r)) = (*self, other) {
             *self = Loud(r)
         };
     }
 
     pub fn is_set(&self) -> bool {
-        !matches!(self, Self::Nil)
-    }
-
-    pub fn take(&mut self) -> Volume {
-        use Volume::*;
-        let reason = *self;
-        *self = Nil;
-        reason
+        use ReasonKind::*;
+        matches!(self, Loud(_) | Quiet(_) | Contradiction)
     }
 }

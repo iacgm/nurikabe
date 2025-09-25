@@ -12,7 +12,6 @@ use ratatui::{
 use super::*;
 
 pub struct Solution {
-    pub depth: usize,
     pub states: Vec<Board>,
     pub reasons: Vec<Reason>,
     pub solved: bool,
@@ -25,30 +24,32 @@ pub fn solve(board: Board) -> Solution {
     solve_knowing(&mut knowledge)
 }
 
-pub fn solve_knowing(knowledge: &mut Knowledge) -> Solution {
-    let board = knowledge.board();
+pub fn solve_knowing(known: &mut Knowledge) -> Solution {
+    let board = known.board();
     let mut states = vec![board.clone()];
     let mut reasons = vec![];
 
     let start = Instant::now();
     'solve: loop {
         for rule in RULES {
-            use Volume::*;
+            use ReasonKind::*;
 
-            rule(knowledge);
-            let reason = knowledge.reason.take();
+            rule(known);
+            let reason = known.take_reason();
             match reason {
-                Contradiction => break,
-                Loud(reason) => {
-                    states.push(knowledge.board());
-                    reasons.push(reason);
-                    knowledge.depth = knowledge.depth.max(reason.depth());
-
+                MaxDepthReached if known.depth == 0 => {
+                    known.raise_depth_limit();
+                    known.reason = Nil;
                     continue 'solve;
                 }
-                Quiet(reason) => {
-                    knowledge.depth = knowledge.depth.max(reason.depth());
-
+                MaxDepthReached => break,
+                Contradiction => break,
+                Loud(reason) => {
+                    states.push(known.board());
+                    reasons.push(reason);
+                    continue 'solve;
+                }
+                Quiet(_) => {
                     continue 'solve;
                 }
                 Nil => (),
@@ -56,13 +57,12 @@ pub fn solve_knowing(knowledge: &mut Knowledge) -> Solution {
         }
 
         // Push final state, so we have completed board at the end
-        let board = knowledge.board();
-        let solved = knowledge.solved();
+        let board = known.board();
+        let solved = known.solved();
         states.push(board);
 
         let time = Instant::now().duration_since(start).as_secs_f32();
         break Solution {
-            depth: knowledge.depth,
             states,
             reasons,
             solved,
@@ -75,7 +75,12 @@ impl Widget for &Solution {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Line::from("Solution Info".blue().bold());
 
-        let solved_line = if self.solved && self.depth == 0 {
+        let solved_line = if self.solved
+            && !self
+                .reasons
+                .iter()
+                .any(|s| matches!(s, Reason::ByContradiction(_)))
+        {
             "Solution found without guessing".green().bold()
         } else if self.solved {
             "Solved with guesses".yellow().bold()

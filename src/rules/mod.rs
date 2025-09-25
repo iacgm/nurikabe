@@ -58,12 +58,12 @@ pub const RULES: &[Rule] = &[
     connects_edges,
     distance,
     reachability,
-    wall_trick,
     all_paths_intersect,
     all_paths_border,
+    wall_trick,
     // Resort to trial & error
     island_contra,
-    // guess,
+    guess,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -80,18 +80,8 @@ pub enum Reason {
     WallTrick,
     AllPathsIntersect,
     AllPathsBorder,
-    ByContradiction(usize, usize),
+    ByContradiction(usize),
     Bifurcation,
-}
-
-impl Reason {
-    pub fn depth(&self) -> usize {
-        use Reason::*;
-        match self {
-            ByContradiction(_, d) => *d,
-            _ => 0,
-        }
-    }
 }
 
 impl Display for Reason {
@@ -110,9 +100,7 @@ impl Display for Reason {
             AllPathsIntersect => "Island must pass square",
             AllPathsBorder => "Island must border square",
             SeaComplete => "Sea complete",
-            ByContradiction(l, d) => {
-                return write!(f, "Contradiction in {} steps (depth {})", l, d)
-            }
+            ByContradiction(l) => return write!(f, "Contradiction in {} steps", l),
             Bifurcation => "Guess",
         };
 

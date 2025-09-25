@@ -1,52 +1,49 @@
 use super::*;
-use rustc_hash::FxHashMap as HashMap;
 
 pub fn guess(known: &mut Knowledge) {
-    let islands = known.island_set().clone();
-    let path_map = islands
+    use ReasonKind::*;
+
+    let board = known.board();
+    let mut cells: Vec<_> = board
         .iter()
-        .map(|&i| (i, enumerate_island_paths(known, i).collect::<Vec<_>>()))
-        .collect::<HashMap<_, _>>();
+        .filter_map(|(c, t)| if t == Empty { Some(c) } else { None })
+        .collect();
 
-    let Some(min) = path_map
-        .values()
-        .map(|ps| ps.len())
-        .filter(|&l| l > 1)
-        .min()
-    else {
-        return;
-    };
+    cells.sort_by_key(|&c| known.get(c).len());
 
-    let Some((&guess_island, guesses)) = path_map.iter().find(|(_, ps)| ps.len() == min) else {
-        return;
-    };
+    for c in cells {
+        let Some(mut bif) = known.bifurcate() else {
+            return;
+        };
 
-    for guess in guesses {
-        let mut bifurcation = known.bifurcate();
-        for &cell in guess {
-            bifurcation.set_land(Reason::Bifurcation, cell);
-            for &island in islands.iter() {
-                if island == guess_island {
-                    continue;
-                }
+        bif.set_land(Reason::Bifurcation, c);
 
-                bifurcation.elim_island(Reason::Bifurcation, cell, island);
+        let solution = solve_knowing(&mut bif);
+        if bif.reason == Contradiction {
+            let len = solution.reasons.len();
+            known.set_sea(Reason::ByContradiction(len), c);
+            if known.reason.is_set() {
+                return;
             }
         }
 
-        solve_knowing(&mut bifurcation);
+        let Some(mut bif) = known.bifurcate() else {
+            return;
+        };
 
-        if bifurcation.solved() {
-            for &cell in guess {
-                known.set_land(Reason::Bifurcation, cell);
-                for &island in islands.iter() {
-                    if island == guess_island {
-                        continue;
-                    }
+        bif.set_sea(Reason::Bifurcation, c);
 
-                    known.elim_island(Reason::Bifurcation, cell, island);
-                }
+        let solution = solve_knowing(&mut bif);
+        if bif.reason == Contradiction {
+            let len = solution.reasons.len();
+            known.set_land(Reason::ByContradiction(len), c);
+            if known.reason.is_set() {
+                return;
             }
         }
+    }
+
+    if !known.solved() {
+        known.reason = MaxDepthReached;
     }
 }
