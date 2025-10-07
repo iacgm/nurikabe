@@ -2,7 +2,7 @@ use super::*;
 
 pub use rustc_hash::FxHashSet as Set;
 
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
 pub enum Possibility {
     Isle(Island),
     Sea,
@@ -19,6 +19,7 @@ pub enum ReasonKind {
 
 #[derive(Clone)]
 pub struct Knowledge {
+    pub unique: bool,
     pub depth: usize,
     pub max_depth: usize,
     pub reason: ReasonKind, // Gets disabled when we make a new change
@@ -49,6 +50,7 @@ impl Knowledge {
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
             possibilities,
+            unique: true,
         }
     }
 
@@ -184,7 +186,9 @@ impl Knowledge {
         match reason {
             Loud(_) | Quiet(_) => {
                 self.reason = Nil;
-                self.max_depth = 1;
+                if self.depth == 0 {
+                    self.max_depth = 1;
+                }
             }
             _ => (),
         }

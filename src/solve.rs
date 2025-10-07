@@ -12,6 +12,7 @@ use ratatui::{
 use super::*;
 
 pub struct Solution {
+    pub unique: bool,
     pub states: Vec<Board>,
     pub reasons: Vec<Reason>,
     pub solved: bool,
@@ -32,11 +33,13 @@ pub fn solve_knowing(known: &mut Knowledge) -> Solution {
     let start = Instant::now();
     'solve: loop {
         let board = known.board();
+
         for rule in RULES {
             use ReasonKind::*;
 
             rule(known, &board);
             let reason = known.take_reason();
+
             match reason {
                 MaxDepthReached if known.depth == 0 => {
                     known.raise_depth_limit();
@@ -68,6 +71,7 @@ pub fn solve_knowing(known: &mut Knowledge) -> Solution {
             reasons,
             solved,
             time,
+            unique: known.unique,
         };
     }
 }
@@ -76,7 +80,9 @@ impl Widget for &Solution {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Line::from("Solution Info".blue().bold());
 
-        let solved_line = if self.solved
+        let solved_line = if self.solved && !self.unique {
+            "Solution found, but is not unique".yellow().bold()
+        } else if self.solved
             && !self
                 .reasons
                 .iter()
@@ -84,9 +90,9 @@ impl Widget for &Solution {
         {
             "Solution found without guessing".green().bold()
         } else if self.solved {
-            "Solved with guesses".yellow().bold()
+            "Solved with guesses".light_yellow().bold()
         } else {
-            // This should never happen anymore
+            // This should happen only if the puzzle has zero solutions
             "No solution found".red().bold()
         };
 

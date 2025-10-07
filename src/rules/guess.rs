@@ -10,6 +10,8 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
     cells.sort_by_key(|&c| known.get(c).len());
 
     for c in cells {
+        let mut sol_found = false;
+
         let Some(mut bif) = known.bifurcate() else {
             return;
         };
@@ -17,12 +19,20 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
         bif.set_land(Reason::Bifurcation, c);
 
         let solution = solve_knowing(&mut bif);
+
         if bif.reason == Contradiction {
             let len = solution.reasons.len();
             known.set_sea(Reason::ByContradiction(len), c);
             if known.reason.is_set() {
                 return;
             }
+        } else if bif.solved() {
+            if !bif.unique {
+                known.unique = false;
+                known.set_sea(Reason::Bifurcation, c);
+                return;
+            }
+            sol_found = true;
         }
 
         let Some(mut bif) = known.bifurcate() else {
@@ -38,6 +48,10 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
             if known.reason.is_set() {
                 return;
             }
+        } else if bif.solved() && (sol_found || !bif.unique) {
+            known.unique = false;
+            known.set_land(Reason::Bifurcation, c);
+            return;
         }
     }
 
