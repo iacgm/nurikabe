@@ -1,10 +1,8 @@
 use super::*;
 
-pub fn no_space(known: &mut Knowledge, board: &Board) {
+pub fn no_space(known: &mut Knowledge, _board: &Board) {
     for &island in known.island_set() {
-        if !enumerate_island_paths(known, island)
-            .any(|path| !noncontiguous_board(&board_with(board, &path)))
-        {
+        if enumerate_island_paths(known, island).next().is_none() {
             known.contradict();
             return;
         }

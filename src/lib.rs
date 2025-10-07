@@ -1,4 +1,5 @@
 pub mod board;
+pub mod generate;
 pub mod known;
 pub mod rules;
 pub mod solve;
@@ -6,6 +7,7 @@ pub mod ui;
 pub mod utils;
 
 pub use board::*;
+pub use generate::*;
 pub use known::*;
 pub use rules::*;
 pub use solve::*;

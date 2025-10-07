@@ -178,15 +178,13 @@ pub fn flood_count(board: &Board, start: Coord) -> usize {
         if visited.contains(&coord) {
             continue;
         }
+        visited.push(coord);
 
         if board[coord] != Land {
             count += 1;
+            let neighbors = neighbors(board, coord);
+            stack.extend(neighbors);
         }
-
-        visited.push(coord);
-
-        let neighbors = neighbors(board, coord);
-        stack.extend(neighbors);
     }
 
     count

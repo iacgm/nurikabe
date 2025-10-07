@@ -12,6 +12,7 @@ mod finished;
 mod guess;
 mod impossible;
 mod island_contra;
+mod no_good_space;
 mod no_space;
 mod noncontiguous;
 mod one_way;
@@ -31,6 +32,7 @@ use finished::*;
 use guess::*;
 use impossible::*;
 use island_contra::*;
+use no_good_space::*;
 use no_space::*;
 use noncontiguous::*;
 use one_way::*;
@@ -48,6 +50,7 @@ pub const RULES: &[Rule] = &[
     noncontiguous,
     impossible,
     no_space,
+    no_good_space,
     // Deduction rules
     sea_complete,
     finished,
@@ -64,6 +67,20 @@ pub const RULES: &[Rule] = &[
     // Resort to trial & error
     island_contra,
     guess,
+];
+
+pub const MONOTONIC: &[Rule] = &[
+    // Contradiction rules
+    pools,
+    noncontiguous,
+    no_space,
+    // Deduction rules
+    finished,
+    cornered,
+    borders_multiple,
+    one_way,
+    trapped,
+    connects_edges,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
