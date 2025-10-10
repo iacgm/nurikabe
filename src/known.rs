@@ -1,5 +1,6 @@
 use super::*;
 
+pub use rustc_hash::FxHashMap as Map;
 pub use rustc_hash::FxHashSet as Set;
 
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
@@ -25,6 +26,7 @@ pub struct Knowledge {
     pub reason: ReasonKind, // Gets disabled when we make a new change
     islands: Vec<Island>,
     possibilities: Grid<Set<Possibility>>, // None = Sea
+    island_paths: Map<Island, Vec<Area>>,
 }
 
 impl Knowledge {
@@ -45,12 +47,13 @@ impl Knowledge {
 
         Self {
             depth: 0,
-            max_depth: 0,
+            max_depth: 1,
             reason: Nil,
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
             possibilities,
             unique: true,
+            island_paths: Default::default(),
         }
     }
 
@@ -122,6 +125,7 @@ impl Knowledge {
         if !possibilities.remove(&Isle(i)) {
             return;
         }
+        self.island_paths.remove(&i);
 
         if self.tile_known(c).is_some() && !was_known {
             self.reason.set(Loud(reason));
@@ -141,6 +145,12 @@ impl Knowledge {
         if !self.known_land(c) {
             self.reason = Loud(reason);
             self.get_mut(c).remove(&Sea);
+            for p in self.get(c).clone() {
+                let Isle(i) = p else {
+                    continue;
+                };
+                self.island_paths.remove(&i);
+            }
         }
     }
 
@@ -150,6 +160,12 @@ impl Knowledge {
         if !self.known_sea(c) {
             self.reason = Loud(reason);
             self.get_mut(c).retain(|p| p == &Sea);
+            for p in self.get(c).clone() {
+                let Isle(i) = p else {
+                    continue;
+                };
+                self.island_paths.remove(&i);
+            }
         }
     }
 
@@ -193,6 +209,14 @@ impl Knowledge {
             _ => (),
         }
         reason
+    }
+
+    pub fn island_paths(&mut self, island: Island) -> &Vec<Area> {
+        if !self.island_paths.contains_key(&island) {
+            let paths = enumerate_island_paths(self, island).collect();
+            self.island_paths.insert(island, paths);
+        }
+        &self.island_paths[&island]
     }
 }
 

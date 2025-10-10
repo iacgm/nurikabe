@@ -7,7 +7,28 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
         .filter_map(|(c, t)| if t == Empty { Some(c) } else { None })
         .collect();
 
-    cells.sort_by_key(|&c| known.get(c).len());
+    // Long expression. It just counts the number of possibilities for this tile, with multiplicity for islands.
+    cells.sort_by_key(|&c| {
+        known
+            .get(c)
+            .clone()
+            .iter()
+            .filter_map(|p| {
+                if let Possibility::Isle(i) = p {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .map(|&i| {
+                known
+                    .island_paths(i)
+                    .iter()
+                    .filter(|&p| p.contains(&c))
+                    .count()
+            })
+            .sum::<usize>()
+    });
 
     for c in cells {
         let mut sol_found = false;

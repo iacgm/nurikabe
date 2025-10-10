@@ -13,6 +13,10 @@ pub fn all_paths_intersect(knowledge: &mut Knowledge, _: &Board) {
             continue;
         };
 
+        // This will cache the results for us.
+        drop(paths);
+        let paths = knowledge.island_paths(is).clone();
+
         let mut intersection: HashSet<(usize, usize)> = intersection.into_iter().collect();
 
         for path in paths {

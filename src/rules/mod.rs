@@ -17,6 +17,7 @@ mod no_space;
 mod noncontiguous;
 mod one_way;
 mod pools;
+mod pruned_all_paths;
 mod reachability;
 mod sea_complete;
 mod sea_trapped;
@@ -37,6 +38,7 @@ use no_space::*;
 use noncontiguous::*;
 use one_way::*;
 use pools::*;
+use pruned_all_paths::*;
 use reachability::*;
 use sea_complete::*;
 use sea_trapped::*;
@@ -64,6 +66,8 @@ pub const RULES: &[Rule] = &[
     all_paths_intersect,
     all_paths_border,
     wall_trick,
+    pruned_all_paths_intersect,
+    pruned_all_paths_border,
     // Resort to trial & error
     island_contra,
     guess,

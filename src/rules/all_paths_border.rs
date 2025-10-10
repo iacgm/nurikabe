@@ -13,6 +13,10 @@ pub fn all_paths_border(knowledge: &mut Knowledge, board: &Board) {
             continue;
         };
 
+        // This will cache the results for us.
+        drop(paths);
+        let paths = knowledge.island_paths(is).clone();
+
         let border = surrounding(board, &path);
 
         let mut intersection: HashSet<(usize, usize)> = border.into_iter().collect();

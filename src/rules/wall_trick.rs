@@ -35,8 +35,7 @@ pub fn wall_trick(known: &mut Knowledge, board: &Board) {
                     .get(far)
                     .iter()
                     .filter_map(|s| if let Isle(i) = s { Some(i) } else { None })
-                    .flat_map(|&i| enumerate_island_paths(known, i))
-                    .filter(|p| p.contains(&far))
+                    .flat_map(|&i| enumerate_island_paths(known, i).filter(|p| p.contains(&far)))
                     .collect::<Vec<_>>();
 
                 // If far is only reachable via near, set near to land

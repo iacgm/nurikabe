@@ -5,11 +5,14 @@ pub fn island_contra(known: &mut Knowledge, _: &Board) {
     use ReasonKind::*;
     let islands = known.island_set().clone();
     for is in islands {
-        let paths = enumerate_island_paths(known, is).collect::<Vec<_>>();
+        let paths = known.island_paths(is);
 
         let [path_a, path_b] = &paths[..] else {
             continue;
         };
+
+        let path_a = &path_a.clone();
+        let path_b = &path_b.clone();
 
         // Try each, using the other as a backup
         let combos = [(path_a, path_b), (path_b, path_a)];

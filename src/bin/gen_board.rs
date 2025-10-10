@@ -1,16 +1,19 @@
 use nurikabe::*;
 
 fn main() -> std::io::Result<()> {
-    let settings = IslandGenSettings {
-        dims: (10, 10),
-        max_island_size: 5,
-        branch_factor: 1,
-        max_island_count: 16,
+    let settings = BoardGenSettings {
+        dims: (12, 12),
+        power: 0.65,
+        max_island_size: 6,
+        branch_factor: 2,
+        max_attempts: 1000,
+        label_attempts: 20,
     };
 
     let start = std::time::Instant::now();
     let board = loop {
-        if let Some(board) = try_generate(settings) {
+        dbg!("Trying");
+        if let Some(board) = gen_board(settings) {
             break board;
         }
     };

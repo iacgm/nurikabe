@@ -1,14 +1,17 @@
 use super::*;
 
+pub mod board_gen;
+pub use board_gen::*;
+
 #[derive(Clone, Copy)]
-pub struct GenSettings {
+pub struct IslandGenSettings {
     pub dims: (usize, usize),
     pub max_island_size: usize,
     pub branch_factor: usize,
     pub max_island_count: usize,
 }
 
-pub fn try_generate(settings: GenSettings) -> Option<Board> {
+pub fn try_generate(settings: IslandGenSettings) -> Option<Board> {
     let (r, c) = settings.dims;
 
     let board = Board::empty(r, c);
@@ -32,7 +35,7 @@ pub fn try_generate(settings: GenSettings) -> Option<Board> {
         let mut newb = boards.last().unwrap().clone();
         newb.add_island(next);
 
-        if !advance(&mut newb) {
+        if !monotonic(&mut newb) {
             continue;
         }
 
@@ -47,7 +50,7 @@ pub fn try_generate(settings: GenSettings) -> Option<Board> {
     None
 }
 
-pub fn gen_options(board: &Board, settings: &GenSettings) -> Vec<Island> {
+fn gen_options(board: &Board, settings: &IslandGenSettings) -> Vec<Island> {
     let n = settings.max_island_size;
 
     let mut v = board
@@ -64,7 +67,7 @@ pub fn gen_options(board: &Board, settings: &GenSettings) -> Vec<Island> {
 }
 
 // true if board is valid
-fn advance(board: &mut Board) -> bool {
+fn monotonic(board: &mut Board) -> bool {
     let mut known = Knowledge::new(board);
 
     'solve: loop {

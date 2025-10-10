@@ -62,12 +62,16 @@ pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
 
     let kind = board[(r, c)];
     let mut area = vec![];
-
-    let mut visited = vec![];
     let mut stack = vec![(r, c)];
 
+    let mut visited = vec![false; h * w];
+
+    let id = |(r, c)| r * w + c;
+
     while let Some((r, c)) = stack.pop() {
-        if r >= h || c >= w || visited.contains(&(r, c)) {
+        let i = id((r, c));
+
+        if visited[i] {
             continue;
         }
 
@@ -76,7 +80,7 @@ pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
             stack.extend(neighbors(board, (r, c)));
         }
 
-        visited.push((r, c));
+        visited[i] = true;
     }
 
     area
@@ -156,11 +160,11 @@ pub fn enumerate_island_paths(
 }
 
 pub fn noncontiguous_board(board: &Board) -> bool {
-    let count = board.iter().filter(|&(_, t)| t != Land).count();
+    let count = board.iter().filter(|&(_, t)| t == Water).count();
 
     let Some(start) = board
         .iter()
-        .find_map(|(c, t)| Some(c).filter(|_| t != Land))
+        .find_map(|(c, t)| Some(c).filter(|_| t == Water))
     else {
         return false;
     };
@@ -171,17 +175,25 @@ pub fn noncontiguous_board(board: &Board) -> bool {
 // Get size of a contiguous non-land segment
 pub fn flood_count(board: &Board, start: Coord) -> usize {
     let mut stack = vec![start];
-    let mut visited = vec![];
     let mut count = 0;
 
+    let (h, w) = board.dims();
+    let mut visited = vec![false; h * w];
+
+    let id = |(r, c)| r * w + c;
+
     while let Some(coord) = stack.pop() {
-        if visited.contains(&coord) {
+        let i = id(coord);
+        if visited[i] {
             continue;
         }
-        visited.push(coord);
+        visited[i] = true;
 
-        if board[coord] != Land {
-            count += 1;
+        let tile = board[coord];
+        if tile != Land {
+            if tile == Water {
+                count += 1;
+            }
             let neighbors = neighbors(board, coord);
             stack.extend(neighbors);
         }
@@ -198,4 +210,111 @@ pub fn board_with(board: &Board, path: &Area) -> Board {
     }
 
     board
+}
+
+pub fn is_valid(board: &Board) -> bool {
+    make_valid(&mut board.clone())
+}
+
+pub fn make_valid(board: &mut Board) -> bool {
+    let mut done = false;
+    while !done {
+        let Some(c) = fill_corners(board) else {
+            return false;
+        };
+        done = c == 0;
+
+        let Some(c) = extend_sea(board) else {
+            return false;
+        };
+
+        done = done && (c == 0);
+    }
+
+    !noncontiguous_board(board)
+}
+
+// number of changes made if board is valid
+pub fn fill_corners(board: &mut Board) -> Option<usize> {
+    let (h, w) = board.dims();
+
+    let mut change_count = 0;
+
+    for r in 0..h - 1 {
+        for c in 0..w - 1 {
+            let coords = [(r, c), (r + 1, c), (r, c + 1), (r + 1, c + 1)];
+
+            let mut count = 0;
+            for c in coords {
+                if board[c] == Water {
+                    count += 1;
+                }
+            }
+
+            if count == 4 {
+                return None;
+            }
+
+            if count != 3 {
+                continue;
+            }
+
+            for c in coords {
+                if board[c] == Empty {
+                    board[c] = Land;
+                    change_count += 1;
+                }
+            }
+        }
+    }
+
+    Some(change_count)
+}
+
+pub fn extend_sea(board: &mut Board) -> Option<usize> {
+    let (h, w) = board.dims();
+
+    let mut count = 0;
+    let mut visited = vec![false; h * w];
+
+    for r in 0..h - 1 {
+        for c in 0..w - 1 {
+            let coord = (r, c);
+            if board[coord] != Water {
+                continue;
+            }
+
+            let i = r * w + c;
+            if visited[i] {
+                continue;
+            }
+            visited[i] = true;
+
+            let area = area(board, coord);
+            let mut border = surrounding(board, &area);
+
+            for (r, c) in area {
+                let i = r * w + c;
+                visited[i] = true;
+            }
+
+            border.retain(|&c| board[c] == Empty);
+
+            while border.len() == 1 {
+                let c = border[0];
+                board[c] = Water;
+                visited[i] = true;
+                count += 1;
+
+                border = neighbors(board, c);
+                border.retain(|&c| board[c] == Empty);
+            }
+        }
+    }
+
+    if !noncontiguous_board(board) {
+        Some(count)
+    } else {
+        None
+    }
 }

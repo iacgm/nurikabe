@@ -10,12 +10,12 @@ pub fn reachability(known: &mut Knowledge, board: &Board) {
             .filter(|&c| known.get(c).contains(&Isle(island)))
             .collect::<Set<_>>();
 
-        let paths = enumerate_island_paths(known, island);
+        let paths = known.island_paths(island);
 
         // Find nodes not reachable by this path
         for path in paths {
             for square in path {
-                possible_squares.remove(&square);
+                possible_squares.remove(square);
             }
         }
 

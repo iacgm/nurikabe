@@ -8,19 +8,26 @@ pub fn connects_edges(knowledge: &mut Knowledge, board: &Board) {
 
     // Map island to island grounding it
     let mut grounded: HashMap<Island, Island> = Default::default();
+    let mut visited = vec![false; h * w];
 
     let mut ground = |coord: Coord| {
         let Some(Isle(edge_is)) = knowledge.if_known(coord) else {
             return;
         };
 
+        visited.fill(false);
+
         let mut stack = vec![coord];
-        let mut visited = vec![];
+
+        let id = |(r,c)| r*w + c;
+        
         while let Some(coord) = stack.pop() {
-            if visited.contains(&coord) {
+            let i = id(coord);
+
+            if visited[i] {
                 continue;
-            };
-            visited.push(coord);
+            }
+            visited[i] = true;
 
             if board[coord] != Land {
                 continue;
