@@ -18,6 +18,7 @@ mod noncontiguous;
 mod one_way;
 mod pools;
 mod pruned_all_paths;
+mod pruned_reachability;
 mod reachability;
 mod sea_complete;
 mod sea_trapped;
@@ -39,6 +40,7 @@ use noncontiguous::*;
 use one_way::*;
 use pools::*;
 use pruned_all_paths::*;
+use pruned_reachability::*;
 use reachability::*;
 use sea_complete::*;
 use sea_trapped::*;
@@ -68,6 +70,7 @@ pub const RULES: &[Rule] = &[
     wall_trick,
     pruned_all_paths_intersect,
     pruned_all_paths_border,
+    pruned_reachability,
     // Resort to trial & error
     island_contra,
     guess,
@@ -85,6 +88,12 @@ pub const MONOTONIC: &[Rule] = &[
     one_way,
     trapped,
     connects_edges,
+    all_paths_intersect,
+    all_paths_border,
+    pruned_all_paths_intersect,
+    pruned_all_paths_border,
+    pruned_reachability,
+    island_contra,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

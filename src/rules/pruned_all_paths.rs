@@ -2,12 +2,18 @@ use rustc_hash::FxHashSet as HashSet;
 
 use super::*;
 
-pub fn pruned_all_paths_intersect(knowledge: &mut Knowledge, _: &Board) {
+const LONG: usize = 5;
+
+pub fn pruned_all_paths_intersect(knowledge: &mut Knowledge, board: &Board) {
     let mut islands = knowledge.island_set().clone();
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
-        let paths = knowledge.island_paths(is);
+        let mut paths = knowledge.island_paths(is).clone();
+        if paths.len() >= LONG {
+            continue;
+        }
+        paths.retain(|p| is_valid(&board_with(board, p)));
 
         if paths.is_empty() {
             continue;
@@ -41,7 +47,11 @@ pub fn pruned_all_paths_border(knowledge: &mut Knowledge, board: &Board) {
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
-        let paths = knowledge.island_paths(is);
+        let mut paths = knowledge.island_paths(is).clone();
+        if paths.len() >= LONG {
+            continue;
+        }
+        paths.retain(|p| is_valid(&board_with(board, p)));
 
         if paths.is_empty() {
             continue;

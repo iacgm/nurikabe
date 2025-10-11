@@ -203,7 +203,7 @@ impl Knowledge {
             Loud(_) | Quiet(_) => {
                 self.reason = Nil;
                 if self.depth == 0 {
-                    self.max_depth = 1;
+                    self.max_depth = 0;
                 }
             }
             _ => (),

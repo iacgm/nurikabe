@@ -25,6 +25,17 @@ pub fn solve(board: Board) -> Solution {
     solve_knowing(&mut knowledge)
 }
 
+// Hacky, but hey it works
+pub fn solve_with_limits(board: Board, max_depth: usize) -> (Knowledge, Solution) {
+    let mut knowledge = Knowledge::new(&board);
+    knowledge.max_depth = max_depth + 1;
+    knowledge.depth += 1;
+
+    let solution = solve_knowing(&mut knowledge);
+
+    (knowledge, solution)
+}
+
 pub fn solve_knowing(known: &mut Knowledge) -> Solution {
     let board = known.board();
     let mut states = vec![board.clone()];

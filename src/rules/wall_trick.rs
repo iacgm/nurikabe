@@ -18,11 +18,7 @@ pub fn wall_trick(known: &mut Knowledge, board: &Board) {
                 }
 
                 // Ensure pattern applies
-                if board[wall1] != Water
-                    || board[wall2] != Water
-                    || board[near] != Empty
-                    || board[far] == Water
-                {
+                if board[wall1] != Water || board[wall2] != Water || board[near] != Empty {
                     continue;
                 }
 
@@ -31,15 +27,21 @@ pub fn wall_trick(known: &mut Knowledge, board: &Board) {
                     continue;
                 }
 
-                let far_paths = known
+                let far_paths_all_pass = known
                     .get(far)
+                    .clone()
                     .iter()
                     .filter_map(|s| if let Isle(i) = s { Some(i) } else { None })
-                    .flat_map(|&i| enumerate_island_paths(known, i).filter(|p| p.contains(&far)))
-                    .collect::<Vec<_>>();
+                    .all(|&i| {
+                        known
+                            .island_paths(i)
+                            .iter()
+                            .filter(|p| p.contains(&far))
+                            .all(|p| p.contains(&near))
+                    });
 
                 // If far is only reachable via near, set near to land
-                if far_paths.iter().all(|path| path.contains(&near)) {
+                if far_paths_all_pass {
                     known.set_land(Reason::WallTrick, near);
                 }
             }

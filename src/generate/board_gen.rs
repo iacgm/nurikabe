@@ -8,21 +8,28 @@ use super::*;
 #[derive(Clone, Copy)]
 pub struct BoardGenSettings {
     pub dims: (usize, usize),
-    pub power: f32,
-    pub max_island_size: usize, // Not technically a hard limit, but creating larger than this is an edge case
+    pub mean_island_size: usize,
+    pub max_island_size: usize,
     pub max_attempts: usize,
     pub branch_factor: usize,
     pub label_attempts: usize,
+    pub max_depth: usize,
 }
 
 pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
     let board = gen_unlabelled(settings)?;
+
+    if board.islands.iter().any(|i| i.n > settings.max_island_size) {
+        return None;
+    }
 
     dbg!("Labelling");
     try_label(board, settings)
 }
 
 pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
+    use ReasonKind::*;
+
     let mut island_opts = vec![];
 
     let mut visited = vec![];
@@ -47,52 +54,101 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
         island_opts.push(candidates);
     }
     island_opts.sort_by_key(|is| is.len());
-    dbg!(&island_opts);
 
     let (h, w) = board.dims();
     let mut init = Board::empty(h, w);
+    for opts in &island_opts {
+        // advance monotonically, board should never be invalid
+        advance(&mut init);
+        debug_assert!(monotonic(&mut init));
 
-    for i in island_opts.iter().filter(|i| i.len() == 1) {
-        init.add_island(i[0]);
+        // try to select a clue that isn't already implied, if possible
+        let first_choices = opts
+            .iter()
+            .cloned()
+            .filter(|i| init[(i.r, i.c)] != Land)
+            .collect::<Vec<_>>();
+
+        let opts = if first_choices.is_empty() {
+            opts
+        } else {
+            &first_choices
+        };
+
+        let &opt = opts.choose(&mut rand::rng()).unwrap();
+        init.add_island(opt);
     }
-    island_opts.retain(|i| i.len() > 1);
 
     for i in 0..settings.label_attempts {
         dbg!(i);
         let mut trial = init.clone();
 
-        for opts in &island_opts {
-            // advance monotonically, board should never be invalid
-            debug_assert!(monotonic(&mut trial));
-
-            // try to select a clue that isn't already implied, if possible
-            let first_choices = opts
-                .iter()
-                .cloned()
-                .filter(|i| trial[(i.r, i.c)] != Land)
-                .collect::<Vec<_>>();
-
-            let opts = if first_choices.is_empty() {
-                opts
-            } else {
-                &first_choices
-            };
-
-            let &opt = opts.choose(&mut rand::rng()).unwrap();
-            trial.add_island(opt);
-        }
-
-        dbg!("??");
         dbg!(&trial.islands);
-        let solution = solve(trial.clone());
-        dbg!("!!");
+        let (known, solution) = solve_with_limits(trial.clone(), settings.max_depth);
 
         if solution.solved && solution.unique {
             return Some(trial);
+        } else if known.reason == MaxDepthReached {
+            let end_board_state = solution.states.last().unwrap();
+            init = mutate(&board, end_board_state);
+        } else {
+            for opts in &island_opts {
+                // advance monotonically, board should never be invalid
+                advance(&mut trial);
+                debug_assert!(monotonic(&mut trial));
+
+                // try to select a clue that isn't already implied, if possible
+                let first_choices = opts
+                    .iter()
+                    .cloned()
+                    .filter(|i| trial[(i.r, i.c)] != Land)
+                    .collect::<Vec<_>>();
+
+                let opts = if first_choices.is_empty() {
+                    opts
+                } else {
+                    &first_choices
+                };
+
+                let &opt = opts.choose(&mut rand::rng()).unwrap();
+                trial.add_island(opt);
+            }
         }
     }
 
-    None
+    // TODO
+    dbg!("OVER");
+    Some(init)
+}
+
+fn mutate(board: &Board, trial: &Board) -> Board {
+    use Tile::*;
+    let (h, w) = board.dims();
+
+    let mut changed = 0;
+    let mut out = Board::empty(h, w);
+
+    for &is in &trial.islands {
+        let c = (is.r, is.c);
+        let trial_area = area(trial, c);
+
+        if trial_area.len() == is.n {
+            out.add_island(is);
+            continue;
+        }
+
+        changed += 1;
+
+        let mut area = area(board, c);
+        area.retain(|&c| board[c] == Land && trial[c] != Land);
+
+        let (r, c) = *area.choose(&mut rand::rng()).unwrap();
+        let is = Island { r, c, n: is.n };
+        out.add_island(is);
+    }
+    dbg!(changed);
+
+    out
 }
 
 pub fn gen_unlabelled(settings: BoardGenSettings) -> Option<Board> {
@@ -199,14 +255,17 @@ fn find_stem(board: &Board) -> Coord {
         .filter_map(|(c, t)| if t == Empty { Some(c) } else { None })
         .collect::<Vec<_>>();
 
-    *candidates.choose(&mut rand::rng()).unwrap()
+    let mut preferred = candidates.clone();
+    preferred.retain(|&c| area(board, c).len() > 1);
+
+    if let Some(s) = preferred.choose(&mut rand::rng()) {
+        *s
+    } else {
+        *candidates.choose(&mut rand::rng()).unwrap()
+    }
 }
 
 fn grow_stem(board: &Board, stem: Coord, settings: BoardGenSettings) -> Vec<Coord> {
-    let pow = settings.power as f64;
-
-    let d = Bernoulli::new(pow).unwrap();
-
     let area = area(board, stem);
     let mut size;
     let mut candidates = if board[stem] != Land {
@@ -219,8 +278,10 @@ fn grow_stem(board: &Board, stem: Coord, settings: BoardGenSettings) -> Vec<Coor
         v
     };
 
+    let target_count = sample(size, settings);
+
     let mut vec = vec![];
-    while d.sample(&mut rand::rng()) && size < settings.max_island_size {
+    while size < target_count {
         let Some(&next) = candidates.choose(&mut rand::rng()) else {
             break;
         };
@@ -233,4 +294,25 @@ fn grow_stem(board: &Board, stem: Coord, settings: BoardGenSettings) -> Vec<Coor
         candidates.dedup();
     }
     vec
+}
+
+// Who likes using libraries?
+pub fn sample(curr_size: usize, settings: BoardGenSettings) -> usize {
+    if curr_size > settings.max_island_size {
+        return 0;
+    }
+
+    let max = settings.max_island_size - curr_size;
+    let mean = settings.mean_island_size - curr_size;
+    let p = mean as f64 / max as f64;
+    let bernie = Bernoulli::new(p).unwrap();
+
+    let mut count = 0;
+    for _ in 0..max {
+        if bernie.sample(&mut rand::rng()) {
+            count += 1;
+        }
+    }
+
+    count
 }
