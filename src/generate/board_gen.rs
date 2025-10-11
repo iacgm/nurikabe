@@ -117,7 +117,6 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
     }
 
     // TODO
-    dbg!("OVER");
     Some(init)
 }
 
