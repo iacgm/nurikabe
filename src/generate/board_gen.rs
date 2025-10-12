@@ -19,10 +19,6 @@ pub struct BoardGenSettings {
 pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
     let board = gen_unlabelled(settings)?;
 
-    if board.islands.iter().any(|i| i.n > settings.max_island_size) {
-        return None;
-    }
-
     dbg!("Labelling");
     try_label(board, settings)
 }
@@ -59,7 +55,6 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
     let mut init = Board::empty(h, w);
     for opts in &island_opts {
         // advance monotonically, board should never be invalid
-        advance(&mut init);
         debug_assert!(monotonic(&mut init));
 
         // try to select a clue that isn't already implied, if possible
@@ -89,12 +84,18 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
         if solution.solved && solution.unique {
             return Some(trial);
         } else if known.reason == MaxDepthReached {
+            dbg!("mutated");
             let end_board_state = solution.states.last().unwrap();
             init = mutate(&board, end_board_state);
         } else {
+            if solution.solved {
+                return Some(trial);
+            }
+
+            dbg!("remade");
+            trial = Board::empty(h, w);
             for opts in &island_opts {
                 // advance monotonically, board should never be invalid
-                advance(&mut trial);
                 debug_assert!(monotonic(&mut trial));
 
                 // try to select a clue that isn't already implied, if possible
@@ -113,10 +114,12 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
                 let &opt = opts.choose(&mut rand::rng()).unwrap();
                 trial.add_island(opt);
             }
+            init = trial;
         }
     }
 
     // TODO
+    dbg!(&init.islands);
     Some(init)
 }
 
@@ -136,12 +139,20 @@ fn mutate(board: &Board, trial: &Board) -> Board {
             continue;
         }
 
+        debug_assert!(advance(&mut out));
+        debug_assert!(monotonic(&mut out));
+
         changed += 1;
 
-        let mut area = area(board, c);
-        area.retain(|&c| board[c] == Land && trial[c] != Land);
+        let area = area(board, c);
+        let mut candidates = area.clone();
+        candidates.retain(|&c| out[c] != Land);
 
-        let (r, c) = *area.choose(&mut rand::rng()).unwrap();
+        let (r, c) = candidates
+            .choose(&mut rand::rng())
+            .cloned()
+            .unwrap_or(area[0]);
+
         let is = Island { r, c, n: is.n };
         out.add_island(is);
     }
@@ -151,9 +162,9 @@ fn mutate(board: &Board, trial: &Board) -> Board {
 }
 
 pub fn gen_unlabelled(settings: BoardGenSettings) -> Option<Board> {
-    let (r, c) = settings.dims;
+    let (h, w) = settings.dims;
 
-    let board = Board::empty(r, c);
+    let board = Board::empty(h, w);
 
     let mut options = vec![gen_options(&board, settings)];
     let mut boards = vec![board];
@@ -181,7 +192,13 @@ pub fn gen_unlabelled(settings: BoardGenSettings) -> Option<Board> {
             continue;
         }
 
+        if large_islands(&newb, settings.max_island_size) {
+            continue;
+        }
+
         if newb.solved() {
+            // Verify we have no large islands
+
             return Some(newb);
         }
 
@@ -190,6 +207,34 @@ pub fn gen_unlabelled(settings: BoardGenSettings) -> Option<Board> {
     }
 
     None
+}
+
+fn large_islands(board: &Board, max_size: usize) -> bool {
+    let (h, w) = board.dims();
+    let mut visited = vec![false; h * w];
+    for ((r, c), t) in board.iter() {
+        let i = r * w + c;
+        if visited[i] {
+            continue;
+        }
+        visited[i] = true;
+
+        if t != Land {
+            continue;
+        }
+
+        let area = area(board, (r, c));
+        if area.len() > max_size {
+            return true;
+        }
+
+        for (r, c) in area {
+            let i = r * w + c;
+            visited[i] = true;
+        }
+    }
+
+    false
 }
 
 fn gen_options(board: &Board, settings: BoardGenSettings) -> Vec<Vec<Coord>> {

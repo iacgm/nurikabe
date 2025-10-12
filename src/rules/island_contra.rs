@@ -1,6 +1,6 @@
 use super::*;
 
-const FEW: usize = 2;
+const FEW: usize = 4;
 
 // We only apply this if there are few possibilities, otherwise we just us a generic guess
 pub fn island_contra(known: &mut Knowledge, _: &Board) {
@@ -37,7 +37,7 @@ pub fn island_contra(known: &mut Knowledge, _: &Board) {
                 let len = solution.reasons.len();
                 contradictory[i] = Some(len);
                 continue;
-            } else if bifurcation.solved() && prev_sol_found {
+            } else if bifurcation.solved() && (!bifurcation.unique || prev_sol_found) {
                 known.unique = false;
                 for &t in path {
                     known.set_land(Reason::Bifurcation, t);

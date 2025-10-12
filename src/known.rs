@@ -45,6 +45,13 @@ impl Knowledge {
             possibilities[r][c] = [Isle((r, c, n).into())].into_iter().collect();
         }
 
+        for ((r, c), t) in board.iter() {
+            if t == Water {
+                possibilities[r][c] = [Sea].into_iter().collect();
+            } else if t == Land {
+                possibilities[r][c].remove(&Sea);
+            }
+        }
         Self {
             depth: 0,
             max_depth: 1,

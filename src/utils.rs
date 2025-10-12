@@ -277,8 +277,8 @@ pub fn extend_sea(board: &mut Board) -> Option<usize> {
     let mut count = 0;
     let mut visited = vec![false; h * w];
 
-    for r in 0..h - 1 {
-        for c in 0..w - 1 {
+    for r in 0..h {
+        for c in 0..w {
             let coord = (r, c);
             if board[coord] != Water {
                 continue;
@@ -290,10 +290,10 @@ pub fn extend_sea(board: &mut Board) -> Option<usize> {
             }
             visited[i] = true;
 
-            let area = area(board, coord);
-            let mut border = surrounding(board, &area);
+            let sea = area(board, coord);
+            let mut border = surrounding(board, &sea);
 
-            for (r, c) in area {
+            for (r, c) in sea {
                 let i = r * w + c;
                 visited[i] = true;
             }
@@ -306,7 +306,8 @@ pub fn extend_sea(board: &mut Board) -> Option<usize> {
                 visited[i] = true;
                 count += 1;
 
-                border = neighbors(board, c);
+                let sea = area(board, c);
+                border = surrounding(board, &sea);
                 border.retain(|&c| board[c] == Empty);
             }
         }

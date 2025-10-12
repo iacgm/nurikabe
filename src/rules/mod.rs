@@ -92,8 +92,6 @@ pub const MONOTONIC: &[Rule] = &[
     all_paths_border,
     pruned_all_paths_intersect,
     pruned_all_paths_border,
-    pruned_reachability,
-    island_contra,
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

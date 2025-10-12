@@ -2,12 +2,12 @@ use nurikabe::*;
 
 fn main() -> std::io::Result<()> {
     let settings = BoardGenSettings {
-        dims: (10, 10),
+        dims: (8, 8),
         mean_island_size: 4,
         max_island_size: 7,
         branch_factor: 3,
         max_attempts: 1000,
-        label_attempts: 50,
+        label_attempts: 10,
         max_depth: 1,
     };
 
