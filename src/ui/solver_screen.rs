@@ -23,7 +23,7 @@ pub struct SolverScreen {
 impl SolverScreen {
     pub fn new(board: Board) -> Self {
         Self {
-            solution: solve_with_limits(board, 1).1,
+            solution: solve_with_limits(&board, 1),
             list_state: ListState::default().with_selected(Some(0)),
             alive: true,
         }

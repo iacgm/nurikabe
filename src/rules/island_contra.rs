@@ -34,7 +34,7 @@ pub fn island_contra(known: &mut Knowledge, _: &Board) {
             let prev_sol_found = contradictory[0..i].iter().any(|o| o.is_none());
 
             if bifurcation.reason == Contradiction {
-                let len = solution.reasons.len();
+                let len = solution.steps();
                 contradictory[i] = Some(len);
                 continue;
             } else if bifurcation.solved() && (!bifurcation.unique || prev_sol_found) {

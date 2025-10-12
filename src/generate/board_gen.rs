@@ -24,8 +24,6 @@ pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
 }
 
 pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
-    use ReasonKind::*;
-
     let mut island_opts = vec![];
 
     let mut visited = vec![];
@@ -52,16 +50,16 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
     island_opts.sort_by_key(|is| is.len());
 
     let (h, w) = board.dims();
-    let mut init = Board::empty(h, w);
+    let mut trial = Board::empty(h, w);
     for opts in &island_opts {
         // advance monotonically, board should never be invalid
-        debug_assert!(monotonic(&mut init));
+        debug_assert!(monotonic(&mut trial));
 
         // try to select a clue that isn't already implied, if possible
         let first_choices = opts
             .iter()
             .cloned()
-            .filter(|i| init[(i.r, i.c)] != Land)
+            .filter(|i| trial[(i.r, i.c)] != Land)
             .collect::<Vec<_>>();
 
         let opts = if first_choices.is_empty() {
@@ -71,56 +69,24 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
         };
 
         let &opt = opts.choose(&mut rand::rng()).unwrap();
-        init.add_island(opt);
+        trial.add_island(opt);
     }
 
     for i in 0..settings.label_attempts {
         dbg!(i);
-        let mut trial = init.clone();
-
-        dbg!(&trial.islands);
-        let (known, solution) = solve_with_limits(trial.clone(), settings.max_depth);
+        let solution = solve_with_limits(&trial, settings.max_depth);
 
         if solution.solved && solution.unique {
             return Some(trial);
-        } else if known.reason == MaxDepthReached {
-            dbg!("mutated");
-            let end_board_state = solution.states.last().unwrap();
-            init = mutate(&board, end_board_state);
-        } else {
-            if solution.solved {
-                return Some(trial);
-            }
-
-            dbg!("remade");
-            trial = Board::empty(h, w);
-            for opts in &island_opts {
-                // advance monotonically, board should never be invalid
-                debug_assert!(monotonic(&mut trial));
-
-                // try to select a clue that isn't already implied, if possible
-                let first_choices = opts
-                    .iter()
-                    .cloned()
-                    .filter(|i| trial[(i.r, i.c)] != Land)
-                    .collect::<Vec<_>>();
-
-                let opts = if first_choices.is_empty() {
-                    opts
-                } else {
-                    &first_choices
-                };
-
-                let &opt = opts.choose(&mut rand::rng()).unwrap();
-                trial.add_island(opt);
-            }
-            init = trial;
         }
+
+        let forced = solution.forced_board();
+        trial = mutate(&board, forced);
     }
 
     // TODO
-    dbg!(&init.islands);
-    Some(init)
+    dbg!(&trial.islands);
+    Some(trial)
 }
 
 fn mutate(board: &Board, trial: &Board) -> Board {

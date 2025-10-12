@@ -42,7 +42,7 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
         let solution = solve_knowing(&mut bif);
 
         if bif.reason == Contradiction {
-            let len = solution.reasons.len();
+            let len = solution.steps();
             known.set_sea(Reason::ByContradiction(len), c);
             if known.reason.is_set() {
                 return;
@@ -64,7 +64,7 @@ pub fn guess(known: &mut Knowledge, board: &Board) {
 
         let solution = solve_knowing(&mut bif);
         if bif.reason == Contradiction {
-            let len = solution.reasons.len();
+            let len = solution.steps();
             known.set_land(Reason::ByContradiction(len), c);
             if known.reason.is_set() {
                 return;

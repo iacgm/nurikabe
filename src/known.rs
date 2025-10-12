@@ -22,7 +22,8 @@ pub enum ReasonKind {
 pub struct Knowledge {
     pub unique: bool,
     pub depth: usize,
-    pub max_depth: usize,
+    pub depth_limit: usize, // Current depth limit. This can be raised (using Iterative deepening) up to raise_max
+    pub raise_max: Option<usize>,
     pub reason: ReasonKind, // Gets disabled when we make a new change
     islands: Vec<Island>,
     possibilities: Grid<Set<Possibility>>, // None = Sea
@@ -54,7 +55,8 @@ impl Knowledge {
         }
         Self {
             depth: 0,
-            max_depth: 1,
+            depth_limit: 1,
+            raise_max: Some(1),
             reason: Nil,
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
@@ -177,13 +179,14 @@ impl Knowledge {
     }
 
     pub fn raise_depth_limit(&mut self) {
-        self.max_depth += 1;
+        self.depth_limit += 1;
     }
 
     pub fn bifurcate(&mut self) -> Option<Self> {
         use ReasonKind::*;
-        if self.depth < self.max_depth {
+        if self.depth < self.depth_limit {
             let mut copy = self.clone();
+            copy.raise_max = Some(0);
             copy.depth += 1;
             Some(copy)
         } else {
@@ -210,7 +213,7 @@ impl Knowledge {
             Loud(_) | Quiet(_) => {
                 self.reason = Nil;
                 if self.depth == 0 {
-                    self.max_depth = 0;
+                    self.depth_limit = 0;
                 }
             }
             _ => (),

@@ -129,7 +129,7 @@ impl Display for Reason {
             AllPathsBorder => "Island must border square",
             SeaComplete => "Sea complete",
             ByContradiction(l) => return write!(f, "Contradiction in {} steps", l),
-            Bifurcation => "Guess",
+            Bifurcation => "Arbitrary",
         };
 
         write!(f, "{}", reason)
