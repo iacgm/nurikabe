@@ -11,6 +11,7 @@ use ratatui::{
 
 use super::*;
 
+#[derive(Clone)]
 pub struct Solution {
     pub unique: bool,
     pub contradiction: bool,
@@ -118,14 +119,14 @@ impl Widget for &Solution {
         let title = Line::from("Solution Info".blue().bold());
 
         let solved_line = if self.solved && !self.unique {
-            "Solution found, but is not unique".yellow().bold()
+            "Solution found, but it is not unique".yellow().bold()
         } else if self.solved
             && !self
                 .reasons
                 .iter()
                 .any(|s| matches!(s, Reason::ByContradiction(_)))
         {
-            "Solution found without guessing".green().bold()
+            "Solution found without guesses".green().bold()
         } else if self.solved {
             "Solved with guesses".light_yellow().bold()
         } else if self.contradiction {

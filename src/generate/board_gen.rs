@@ -14,16 +14,91 @@ pub struct BoardGenSettings {
     pub branch_factor: usize,
     pub label_attempts: usize,
     pub max_depth: usize,
+    pub max_amends: usize,
 }
+
+const FIXABLE_FRAC: f64 = 0.10;
 
 pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
     let board = gen_unlabelled(settings)?;
 
     dbg!("Labelling");
-    try_label(board, settings)
+    let labelled = metropolis_label(&board, settings);
+
+    if empty_frac(&labelled) < FIXABLE_FRAC {
+        return None;
+    }
+
+    dbg!("Amending");
+    amend(&labelled, settings)
 }
 
-pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
+pub fn amend(board: &Board, settings: BoardGenSettings) -> Option<Board> {
+    let (h, w) = board.dims();
+
+    let mut out = Board::from_islands(h, w, board.islands.iter().copied());
+    let mut soln = solve_with_limits(board, settings.max_depth);
+
+    for _ in 0..settings.max_amends {
+        if soln.contradiction {
+            return None;
+        }
+
+        if soln.solved && soln.unique {
+            return Some(out);
+        }
+
+        let forced = soln.forced_board();
+
+        out.islands.sort_by_key(|&i| empty_reachable_by(forced, i));
+        for is in &mut out.islands {
+            let coord = (is.r, is.c);
+            let area = area(forced, coord);
+
+            if area.len() < is.n {
+                is.n += 1;
+                dbg!("!!");
+                soln = solve_with_limits(&out, settings.max_depth);
+                break;
+            }
+        }
+    }
+
+    if soln.solved && soln.unique {
+        Some(out)
+    } else {
+        None
+    }
+}
+
+fn empty_reachable_by(board: &Board, island: Island) -> usize {
+    let coord = (island.r, island.c);
+    let (h, w) = board.dims();
+
+    let mut visited = vec![false; h * w];
+    let mut stack = vec![coord];
+    let mut count = 0;
+    while let Some(next) = stack.pop() {
+        let (r, c) = next;
+        let id = r * w + c;
+        if visited[id] {
+            continue;
+        }
+        visited[id] = true;
+
+        if board[next] != Water {
+            stack.extend(neighbors(board, next));
+        }
+
+        if board[next] == Empty {
+            count += 1;
+        }
+    }
+
+    count
+}
+
+pub fn try_label(board: &Board, settings: BoardGenSettings) -> Option<Board> {
     let mut island_opts = vec![];
 
     let mut visited = vec![];
@@ -36,7 +111,7 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
             continue;
         }
 
-        let area = area(&board, c);
+        let area = area(board, c);
         let n = area.len();
         visited.extend_from_slice(&area);
 
@@ -81,7 +156,7 @@ pub fn try_label(board: Board, settings: BoardGenSettings) -> Option<Board> {
         }
 
         let forced = solution.forced_board();
-        trial = mutate(&board, forced);
+        trial = mutate(board, forced);
     }
 
     // TODO
@@ -315,14 +390,24 @@ pub fn sample(curr_size: usize, settings: BoardGenSettings) -> usize {
     let max = settings.max_island_size - curr_size;
     let mean = settings.mean_island_size - curr_size;
     let p = mean as f64 / max as f64;
-    let bernie = Bernoulli::new(p).unwrap();
 
     let mut count = 0;
     for _ in 0..max {
-        if bernie.sample(&mut rand::rng()) {
+        if with_prob(p) {
             count += 1;
         }
     }
 
     count
+}
+
+pub fn with_prob(p: f64) -> bool {
+    Bernoulli::new(p).unwrap().sample(&mut rand::rng())
+}
+
+pub fn empty_frac(board: &Board) -> f64 {
+    use Tile::*;
+    let (h, w) = board.dims();
+    let empty_count = board.iter().filter(|(_, t)| *t == Empty).count();
+    empty_count as f64 / (h * w) as f64
 }

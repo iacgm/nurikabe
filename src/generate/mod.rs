@@ -1,7 +1,10 @@
 use super::*;
 
 pub mod board_gen;
+pub mod metropolis;
+
 pub use board_gen::*;
+pub use metropolis::*;
 
 #[derive(Clone, Copy)]
 pub struct IslandGenSettings {
