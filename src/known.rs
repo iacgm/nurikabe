@@ -26,7 +26,8 @@ pub struct Knowledge {
     pub raise_max: Option<usize>,
     pub reason: ReasonKind, // Gets disabled when we make a new change
     islands: Vec<Island>,
-    possibilities: Grid<Set<Possibility>>, // None = Sea
+    dims: (usize, usize),
+    possibilities: Vec<Set<Possibility>>, // None = Sea
     island_paths: Map<Island, Vec<Area>>,
 }
 
@@ -40,17 +41,19 @@ impl Knowledge {
         let mut possibility_space = Set::from_iter(board.islands.iter().copied().map(Isle));
         possibility_space.insert(Sea);
 
-        let mut possibilities = vec![vec![possibility_space.clone(); w]; h];
+        let mut possibilities = vec![possibility_space.clone(); w * h];
 
         for &Island { r, c, n } in board.islands.iter() {
-            possibilities[r][c] = [Isle((r, c, n).into())].into_iter().collect();
+            let i = r * w + c;
+            possibilities[i] = [Isle((r, c, n).into())].into_iter().collect();
         }
 
         for ((r, c), t) in board.iter() {
+            let i = r * w + c;
             if t == Water {
-                possibilities[r][c] = [Sea].into_iter().collect();
+                possibilities[i] = [Sea].into_iter().collect();
             } else if t == Land {
-                possibilities[r][c].remove(&Sea);
+                possibilities[i].remove(&Sea);
             }
         }
         Self {
@@ -60,6 +63,7 @@ impl Knowledge {
             reason: Nil,
             islands: board.islands.clone(),
             // Initially assume any island could reach any tile
+            dims: board.dims,
             possibilities,
             unique: true,
             island_paths: Default::default(),
@@ -67,8 +71,7 @@ impl Knowledge {
     }
 
     pub fn board(&self) -> Board {
-        let h = self.possibilities.len();
-        let w = self.possibilities[0].len();
+        let (h, w) = self.dims;
 
         let mut board = Board::from_islands(h, w, self.islands.iter().copied());
 
@@ -84,11 +87,15 @@ impl Knowledge {
     }
 
     pub fn get_mut(&mut self, (r, c): Coord) -> &mut Set<Possibility> {
-        &mut self.possibilities[r][c]
+        let (_, w) = self.dims;
+        let i = r * w + c;
+        &mut self.possibilities[i]
     }
 
     pub fn get(&self, (r, c): Coord) -> &Set<Possibility> {
-        &self.possibilities[r][c]
+        let (_, w) = self.dims;
+        let i = r * w + c;
+        &self.possibilities[i]
     }
 
     pub fn known_sea(&self, c: Coord) -> bool {
@@ -113,7 +120,9 @@ impl Knowledge {
     }
 
     pub fn if_known(&self, (r, c): Coord) -> Option<Possibility> {
-        let is = &self.possibilities[r][c];
+        let (_, w) = self.dims;
+        let i = r * w + c;
+        let is = &self.possibilities[i];
         if is.len() == 1 {
             is.iter().copied().next()
         } else {
@@ -128,6 +137,10 @@ impl Knowledge {
     pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
         use Possibility::*;
         use ReasonKind::*;
+        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
+            dbg!(&self.islands);
+            panic!("???");
+        }
         let was_known = self.tile_known(c).is_some();
 
         let possibilities = self.get_mut(c);
@@ -150,6 +163,12 @@ impl Knowledge {
 
     pub fn set_land(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
+        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
+            dbg!("!!!");
+            dbg!(&self.islands);
+            panic!("???");
+        }
+
         use ReasonKind::*;
         if !self.known_land(c) {
             self.reason = Loud(reason);
@@ -166,6 +185,10 @@ impl Knowledge {
     pub fn set_sea(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
         use ReasonKind::*;
+        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
+            dbg!(&self.islands);
+            panic!("???");
+        }
         if !self.known_sea(c) {
             self.reason = Loud(reason);
             self.get_mut(c).retain(|p| p == &Sea);
@@ -195,15 +218,16 @@ impl Knowledge {
         }
     }
 
-    pub fn grid(&self) -> &Grid<Set<Possibility>> {
+    pub fn possibilities(&self) -> &Vec<Set<Possibility>> {
         &self.possibilities
     }
 
     pub fn solved(&self) -> bool {
         use ReasonKind::*;
+
         self.reason != Contradiction
             && self.reason != MaxDepthReached
-            && self.possibilities.iter().flatten().all(|s| s.len() == 1)
+            && self.possibilities.iter().all(|s| s.len() == 1)
     }
 
     pub fn take_reason(&mut self) -> ReasonKind {

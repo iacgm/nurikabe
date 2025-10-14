@@ -2,14 +2,14 @@ use nurikabe::*;
 
 fn main() -> std::io::Result<()> {
     let settings = BoardGenSettings {
-        dims: (12, 12),
-        mean_island_size: 3,
-        max_island_size: 6,
+        dims: (14, 10),
+        mean_island_size: 2,
+        max_island_size: 5,
         branch_factor: 3,
         max_attempts: 100,
-        label_attempts: 150,
-        max_depth: 1,
-        max_amends: 8,
+        label_attempts: 5,
+        max_depth: 0,
+        max_amends: 3,
     };
 
     let start = std::time::Instant::now();

@@ -16,7 +16,8 @@ pub struct Island {
 
 #[derive(Clone)]
 pub struct Board {
-    pub tiles: Grid<Tile>,
+    pub dims: (usize, usize),
+    pub tiles: Vec<Tile>,
     pub islands: Vec<Island>,
 }
 
@@ -31,7 +32,8 @@ pub enum Tile {
 impl Board {
     pub fn empty(rows: usize, cols: usize) -> Self {
         Self {
-            tiles: vec![vec![Empty; cols]; rows],
+            dims: (rows, cols),
+            tiles: vec![Empty; cols * rows],
             islands: vec![],
         }
     }
@@ -42,14 +44,24 @@ impl Board {
     }
 
     pub fn resize(&mut self, (h, w): Coord) {
-        for row in &mut self.tiles {
-            row.resize(w, Empty);
+        let mut new = vec![Empty; h * w];
+
+        let (oh, ow) = self.dims();
+        for r in 0..oh {
+            for c in 0..ow {
+                let o = r * ow + c;
+                let i = r * w + c;
+
+                new[i] = self.tiles[o];
+            }
         }
-        self.tiles.resize(h, vec![Empty; w]);
+
+        self.dims = (h, w);
+        self.tiles = new;
     }
 
     pub fn dims(&self) -> Coord {
-        (self.tiles.len(), self.tiles[0].len())
+        self.dims
     }
 
     pub fn contains(&self, (r, c): Coord) -> bool {
@@ -72,7 +84,7 @@ impl Board {
     pub fn add_island(&mut self, island: Island) {
         let Island { r, c, .. } = island;
         self.remove_island((r, c));
-        self.tiles[r][c] = Land;
+        self[(r, c)] = Land;
         self.islands.push(island);
     }
 
@@ -81,22 +93,26 @@ impl Board {
     }
 
     pub fn solved(&self) -> bool {
-        self.tiles
-            .iter()
-            .all(|row| row.iter().all(|&tile| tile != Empty))
+        self.tiles.iter().all(|&tile| tile != Empty)
+    }
+
+    pub fn rows(&self) -> impl Iterator<Item = &[Tile]> {
+        self.tiles.chunks(self.dims.1)
     }
 }
 
 impl Index<Coord> for Board {
     type Output = Tile;
     fn index(&self, (r, c): Coord) -> &Self::Output {
-        &self.tiles[r][c]
+        let (_, w) = self.dims;
+        &self.tiles[r * w + c]
     }
 }
 
 impl IndexMut<Coord> for Board {
     fn index_mut(&mut self, (r, c): Coord) -> &mut Self::Output {
-        &mut self.tiles[r][c]
+        let (_, w) = self.dims;
+        &mut self.tiles[r * w + c]
     }
 }
 

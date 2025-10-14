@@ -17,7 +17,7 @@ pub struct BoardGenSettings {
     pub max_amends: usize,
 }
 
-const FIXABLE_FRAC: f64 = 0.10;
+const FIXABLE_FRAC: f64 = 0.05;
 
 pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
     let board = gen_unlabelled(settings)?;
@@ -58,6 +58,7 @@ pub fn amend(board: &Board, settings: BoardGenSettings) -> Option<Board> {
             if area.len() < is.n {
                 is.n += 1;
                 dbg!("!!");
+                out = Board::from_islands(h, w, out.islands.into_iter());
                 soln = solve_with_limits(&out, settings.max_depth);
                 break;
             }
@@ -147,8 +148,7 @@ pub fn try_label(board: &Board, settings: BoardGenSettings) -> Option<Board> {
         trial.add_island(opt);
     }
 
-    for i in 0..settings.label_attempts {
-        dbg!(i);
+    for _ in 0..settings.label_attempts {
         let solution = solve_with_limits(&trial, settings.max_depth);
 
         if solution.solved && solution.unique {

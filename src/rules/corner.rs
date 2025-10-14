@@ -8,8 +8,8 @@ pub fn cornered(knowledge: &mut Knowledge, board: &Board) {
             let coords = [(r, c), (r + 1, c), (r, c + 1), (r + 1, c + 1)];
 
             let mut count = 0;
-            for (r, c) in coords {
-                if board.tiles[r][c] == Water {
+            for c in coords {
+                if board[c] == Water {
                     count += 1;
                 }
             }

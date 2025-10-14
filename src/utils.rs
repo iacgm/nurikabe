@@ -68,16 +68,16 @@ pub fn area(board: &Board, (r, c): (usize, usize)) -> Area {
 
     let id = |(r, c)| r * w + c;
 
-    while let Some((r, c)) = stack.pop() {
-        let i = id((r, c));
+    while let Some(c) = stack.pop() {
+        let i = id(c);
 
         if visited[i] {
             continue;
         }
 
-        if board.tiles[r][c] == kind {
-            area.push((r, c));
-            stack.extend(neighbors(board, (r, c)));
+        if board[c] == kind {
+            area.push(c);
+            stack.extend(neighbors(board, c));
         }
 
         visited[i] = true;

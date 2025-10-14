@@ -23,7 +23,7 @@ impl<'a> Widget for Diff<'a> {
 
         let mut lines = vec![];
 
-        for (r, row) in board.tiles.iter().enumerate() {
+        for (r, row) in board.rows().enumerate() {
             let mut line = vec![];
             for (c, tile) in row.iter().enumerate() {
                 let coord = (r, c);

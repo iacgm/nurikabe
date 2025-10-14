@@ -54,6 +54,7 @@ pub fn solve(board: &Board) -> Solution {
 pub fn solve_with_limits(board: &Board, max_depth: usize) -> Solution {
     let mut knowledge = Knowledge::new(board);
 
+    knowledge.depth_limit = 0;
     knowledge.raise_max = Some(max_depth);
 
     solve_knowing(&mut knowledge)
