@@ -7,17 +7,9 @@ pub fn all_paths_border(knowledge: &mut Knowledge, board: &Board) {
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
-        let mut paths = enumerate_island_paths(knowledge, is);
-
-        let Some(path) = paths.next() else {
-            continue;
-        };
-
-        // This will cache the results for us.
-        drop(paths);
         let paths = knowledge.island_paths(is).clone();
 
-        let border = surrounding(board, &path);
+        let border = surrounding(board, &paths[0]);
 
         let mut intersection: HashSet<(usize, usize)> = border.into_iter().collect();
 

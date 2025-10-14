@@ -7,17 +7,9 @@ pub fn all_paths_intersect(knowledge: &mut Knowledge, _: &Board) {
     islands.sort_by_key(|i| i.n);
 
     for is in islands {
-        let mut paths = enumerate_island_paths(knowledge, is);
-
-        let Some(intersection) = paths.next() else {
-            continue;
-        };
-
-        // This will cache the results for us.
-        drop(paths);
         let paths = knowledge.island_paths(is).clone();
 
-        let mut intersection: HashSet<(usize, usize)> = intersection.into_iter().collect();
+        let mut intersection: HashSet<(usize, usize)> = paths[0].iter().copied().collect();
 
         for path in paths {
             let cells = HashSet::from_iter(path.into_iter());

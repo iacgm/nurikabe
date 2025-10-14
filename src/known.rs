@@ -137,17 +137,15 @@ impl Knowledge {
     pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
         use Possibility::*;
         use ReasonKind::*;
-        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
-            dbg!(&self.islands);
-            panic!("???");
-        }
         let was_known = self.tile_known(c).is_some();
 
         let possibilities = self.get_mut(c);
         if !possibilities.remove(&Isle(i)) {
             return;
         }
-        self.island_paths.remove(&i);
+        if let Some(paths) = self.island_paths.get_mut(&i) {
+            paths.retain(|p| !p.contains(&c));
+        }
 
         if self.tile_known(c).is_some() && !was_known {
             self.reason.set(Loud(reason));
@@ -163,20 +161,16 @@ impl Knowledge {
 
     pub fn set_land(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
-        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
-            dbg!("!!!");
-            dbg!(&self.islands);
-            panic!("???");
-        }
-
         use ReasonKind::*;
         if !self.known_land(c) {
             self.reason = Loud(reason);
             self.get_mut(c).remove(&Sea);
+
             for p in self.get(c).clone() {
                 let Isle(i) = p else {
                     continue;
                 };
+
                 self.island_paths.remove(&i);
             }
         }
@@ -185,19 +179,21 @@ impl Knowledge {
     pub fn set_sea(&mut self, reason: Reason, c: Coord) {
         use Possibility::*;
         use ReasonKind::*;
-        if matches!(reason, Reason::Bifurcation | Reason::ByContradiction(_)) {
-            dbg!(&self.islands);
-            panic!("???");
-        }
+
         if !self.known_sea(c) {
             self.reason = Loud(reason);
-            self.get_mut(c).retain(|p| p == &Sea);
+
             for p in self.get(c).clone() {
                 let Isle(i) = p else {
                     continue;
                 };
-                self.island_paths.remove(&i);
+
+                if let Some(paths) = self.island_paths.get_mut(&i) {
+                    paths.retain(|p| !p.contains(&c));
+                }
             }
+
+            self.get_mut(c).retain(|p| p == &Sea);
         }
     }
 
@@ -248,6 +244,14 @@ impl Knowledge {
     pub fn island_paths(&mut self, island: Island) -> &Vec<Area> {
         if !self.island_paths.contains_key(&island) {
             let paths = enumerate_island_paths(self, island).collect();
+
+            for path in &paths {
+                for &t in path {
+                    use Tile::*;
+                    debug_assert!(self.tile_known(t) != Some(Water));
+                }
+            }
+
             self.island_paths.insert(island, paths);
         }
         &self.island_paths[&island]
