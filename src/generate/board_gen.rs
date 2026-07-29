@@ -22,14 +22,12 @@ const FIXABLE_FRAC: f64 = 0.05;
 pub fn gen_board(settings: BoardGenSettings) -> Option<Board> {
     let board = gen_unlabelled(settings)?;
 
-    dbg!("Labelling");
     let labelled = metropolis_label(&board, settings);
 
     if empty_frac(&labelled) < FIXABLE_FRAC {
         return None;
     }
 
-    dbg!("Amending");
     amend(&labelled, settings)
 }
 
@@ -57,7 +55,6 @@ pub fn amend(board: &Board, settings: BoardGenSettings) -> Option<Board> {
 
             if area.len() < is.n {
                 is.n += 1;
-                dbg!("!!");
                 out = Board::from_islands(h, w, out.islands.into_iter());
                 soln = solve_with_limits(&out, settings.max_depth);
                 break;
@@ -129,7 +126,7 @@ pub fn try_label(board: &Board, settings: BoardGenSettings) -> Option<Board> {
     let mut trial = Board::empty(h, w);
     for opts in &island_opts {
         // advance monotonically, board should never be invalid
-        debug_assert!(monotonic(&mut trial));
+        monotonic(&mut trial);
 
         // try to select a clue that isn't already implied, if possible
         let first_choices = opts
@@ -159,8 +156,6 @@ pub fn try_label(board: &Board, settings: BoardGenSettings) -> Option<Board> {
         trial = mutate(board, forced);
     }
 
-    // TODO
-    dbg!(&trial.islands);
     Some(trial)
 }
 
@@ -168,7 +163,6 @@ fn mutate(board: &Board, trial: &Board) -> Board {
     use Tile::*;
     let (h, w) = board.dims();
 
-    let mut changed = 0;
     let mut out = Board::empty(h, w);
 
     for &is in &trial.islands {
@@ -180,10 +174,8 @@ fn mutate(board: &Board, trial: &Board) -> Board {
             continue;
         }
 
-        debug_assert!(advance(&mut out));
-        debug_assert!(monotonic(&mut out));
-
-        changed += 1;
+        advance(&mut out);
+        monotonic(&mut out);
 
         let area = area(board, c);
         let mut candidates = area.clone();
@@ -197,7 +189,6 @@ fn mutate(board: &Board, trial: &Board) -> Board {
         let is = Island { r, c, n: is.n };
         out.add_island(is);
     }
-    dbg!(changed);
 
     out
 }

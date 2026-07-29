@@ -134,6 +134,14 @@ impl Knowledge {
         &self.islands
     }
 
+    pub fn set_island(&mut self, reason: Reason, c: Coord, i: Island) {
+        let islands = self.islands.clone();
+        self.set_land(reason, c);
+        for i2 in islands.into_iter().filter(|&i2| i2 != i) {
+            self.elim_island(reason, c, i2);
+        }
+    }
+
     pub fn elim_island(&mut self, reason: Reason, c: Coord, i: Island) {
         use Possibility::*;
         use ReasonKind::*;
@@ -152,6 +160,7 @@ impl Knowledge {
         } else {
             self.reason.set(Quiet(reason));
         }
+        self.reason;
     }
 
     // Acknowledge a contradiction
@@ -243,14 +252,7 @@ impl Knowledge {
 
     pub fn island_paths(&mut self, island: Island) -> &Vec<Area> {
         if !self.island_paths.contains_key(&island) {
-            let paths = enumerate_island_paths(self, island).collect();
-
-            for path in &paths {
-                for &t in path {
-                    use Tile::*;
-                    debug_assert!(self.tile_known(t) != Some(Water));
-                }
-            }
+            let paths: Vec<_> = enumerate_island_paths(self, island).collect();
 
             self.island_paths.insert(island, paths);
         }
@@ -261,8 +263,10 @@ impl Knowledge {
 impl ReasonKind {
     pub fn set(&mut self, other: Self) {
         use ReasonKind::*;
-        if let (Nil | Quiet(_), Loud(r)) = (*self, other) {
-            *self = Loud(r)
+        match (*self, other) {
+            (Quiet(_), Loud(r)) => *self = Loud(r),
+            (Nil, r) => *self = r,
+            _ => ()
         };
     }
 

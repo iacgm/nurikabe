@@ -1,5 +1,6 @@
 use std::ops::{Index, IndexMut};
 
+use base64::{Engine, engine::general_purpose::STANDARD};
 use ratatui::style::Color;
 
 pub use Tile::*;
@@ -14,7 +15,7 @@ pub struct Island {
     pub n: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Board {
     pub dims: (usize, usize),
     pub tiles: Vec<Tile>,
@@ -98,6 +99,124 @@ impl Board {
 
     pub fn rows(&self) -> impl Iterator<Item = &[Tile]> {
         self.tiles.chunks(self.dims.1)
+    }
+
+    pub fn from_b64(input: &str) -> Self {
+        let bytes = STANDARD.decode(input).unwrap();
+
+        let mut p = 0;
+
+        let mut next = || {
+            let i = bytes[p];
+            p += 1;
+            i
+        };
+
+        let h = next() as usize;
+        let w = next() as usize;
+        let mut ni = (next() as usize) << 8;
+        ni += next() as usize;
+        let mut nl = (next() as usize) << 8;
+        nl += next() as usize;
+        let mut ns = (next() as usize) << 8;
+        ns += next() as usize;
+
+        let mut islands = vec![];
+
+        for _ in 0..ni {
+            let r = next() as usize;
+            let c = next() as usize;
+            let n = next() as usize;
+            islands.push(Island { r, c, n });
+        }
+
+        let mut board = Board::from_islands(h as _, w as _, islands.into_iter());
+
+        for _ in 0..nl {
+            let i = next() as usize * w + next() as usize;
+            board.tiles[i] = Land;
+        }
+
+        for _ in 0..ns {
+            let i = next() as usize * w + next() as usize;
+            board.tiles[i] = Water;
+        }
+
+        board
+    }
+
+    pub fn b64(&self) -> String {
+        let mut ser: Vec<u8> = vec![];
+
+        let (h, w) = self.dims();
+        ser.push(h as u8);
+        ser.push(w as u8);
+
+        let land: Vec<usize> = self
+            .tiles
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|t| t.1 == Land)
+            .map(|t| t.0)
+            .collect();
+        let seas: Vec<usize> = self
+            .tiles
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|t| t.1 == Water)
+            .map(|t| t.0)
+            .collect();
+
+        let ni: u16 = self.islands.len() as u16;
+        let nl: u16 = land.len() as u16;
+        let nc: u16 = seas.len() as u16;
+
+        ser.push((ni >> 8) as u8);
+        ser.push(ni as u8);
+        ser.push((nl >> 8) as u8);
+        ser.push(nl as u8);
+        ser.push((nc >> 8) as u8);
+        ser.push(nc as u8);
+
+        for &Island { r, c, n } in self.islands.iter() {
+            ser.push(r as u8);
+            ser.push(c as u8);
+            ser.push(n as u8);
+        }
+
+        for i in land {
+            let r = i / w;
+            let c = i % w;
+            ser.push(r as u8);
+            ser.push(c as u8);
+        }
+
+        for i in seas {
+            let r = i / w;
+            let c = i % w;
+            ser.push(r as u8);
+            ser.push(c as u8);
+        }
+
+        STANDARD.encode(ser)
+    }
+
+    pub fn slug(&self) -> String {
+        let mut ser = vec![];
+
+        let (h, w) = self.dims();
+        ser.push(h as u8);
+        ser.push(w as u8);
+
+        for &Island { r, c, n } in self.islands.iter() {
+            ser.push(r as u8);
+            ser.push(c as u8);
+            ser.push(n as u8);
+        }
+
+        STANDARD.encode(ser)
     }
 }
 

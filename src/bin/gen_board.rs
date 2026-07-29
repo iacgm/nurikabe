@@ -14,7 +14,6 @@ fn main() -> std::io::Result<()> {
 
     let start = std::time::Instant::now();
     let board = loop {
-        dbg!("Trying");
         if let Some(board) = gen_board(settings) {
             break board;
         }

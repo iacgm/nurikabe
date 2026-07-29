@@ -49,8 +49,12 @@ impl SolverScreen {
 
         use KeyCode::*;
         match event.code {
-            Esc => {
+            Esc | Char('q')=> {
                 self.alive = false;
+            }
+            Char('x') => {
+                ratatui::restore();
+                std::process::exit(0)
             }
             Up | Char('k') => {
                 self.list_state.select_previous();

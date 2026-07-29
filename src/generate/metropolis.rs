@@ -160,9 +160,6 @@ fn label_randomly(board: &Board) -> Board {
     let (h, w) = board.dims();
     let mut trial = Board::empty(h, w);
     for opts in &island_opts {
-        // advance monotonically, board should never be invalid
-        debug_assert!(monotonic(&mut trial));
-
         // try to select a clue that isn't already implied, if possible
         let first_choices = opts
             .iter()

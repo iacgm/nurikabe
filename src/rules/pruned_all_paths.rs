@@ -8,7 +8,7 @@ pub fn pruned_all_paths_intersect(knowledge: &mut Knowledge, board: &Board) {
     let mut islands = knowledge.island_set().clone();
     islands.sort_by_key(|i| i.n);
 
-    for is in islands {
+    'outer: for is in islands {
         if too_many_paths(knowledge, is) {
             continue;
         }
@@ -29,17 +29,15 @@ pub fn pruned_all_paths_intersect(knowledge: &mut Knowledge, board: &Board) {
             intersection = intersection.intersection(&cells).copied().collect();
 
             if intersection.is_empty() {
-                break;
+                continue 'outer;
             }
         }
 
-        if !intersection.is_empty() {
-            for cell in intersection {
-                knowledge.set_land(Reason::AllPathsIntersect, cell);
-            }
-            if knowledge.reason.is_set() {
-                return;
-            }
+        for cell in intersection {
+            knowledge.set_island(Reason::AllPathsIntersect, cell, is);
+        }
+        if knowledge.reason.is_set() {
+            return;
         }
     }
 }
