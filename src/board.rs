@@ -1,4 +1,8 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    cmp::min,
+    ops::{Index, IndexMut},
+};
+
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use ratatui::style::Color;
@@ -48,8 +52,8 @@ impl Board {
         let mut new = vec![Empty; h * w];
 
         let (oh, ow) = self.dims();
-        for r in 0..oh {
-            for c in 0..ow {
+        for r in 0..min(oh, h) {
+            for c in 0..min(ow, w) {
                 let o = r * ow + c;
                 let i = r * w + c;
 
